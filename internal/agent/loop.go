@@ -802,16 +802,3 @@ func truncateToolArgs(args map[string]any, maxLen int) map[string]any {
 	}
 	return out
 }
-
-// truncateToolArgs returns a copy of arguments with string values truncated to maxLen.
-func truncateToolArgs(args map[string]interface{}, maxLen int) map[string]interface{} {
-	out := make(map[string]interface{}, len(args))
-	for k, v := range args {
-		if s, ok := v.(string); ok && len(s) > maxLen {
-			out[k] = truncateStr(s, maxLen)
-		} else {
-			out[k] = v
-		}
-	}
-	return out
-}
