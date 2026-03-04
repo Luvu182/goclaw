@@ -475,6 +475,7 @@ func (l *Loop) runLoop(ctx context.Context, req RunRequest) (result *RunResult, 
 		assistantMsg := providers.Message{
 			Role:                "assistant",
 			Content:             resp.Content,
+			Thinking:            resp.Thinking, // preserve reasoning_content for providers that require it (Kimi, DeepSeek)
 			ToolCalls:           resp.ToolCalls,
 			Phase:               resp.Phase,               // preserve Codex phase metadata (gpt-5.3-codex)
 			RawAssistantContent: resp.RawAssistantContent, // preserve thinking blocks for Anthropic passback
@@ -792,6 +793,19 @@ func hasParseErrors(calls []providers.ToolCall) bool {
 
 func truncateToolArgs(args map[string]any, maxLen int) map[string]any {
 	out := make(map[string]any, len(args))
+	for k, v := range args {
+		if s, ok := v.(string); ok && len(s) > maxLen {
+			out[k] = truncateStr(s, maxLen)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// truncateToolArgs returns a copy of arguments with string values truncated to maxLen.
+func truncateToolArgs(args map[string]interface{}, maxLen int) map[string]interface{} {
+	out := make(map[string]interface{}, len(args))
 	for k, v := range args {
 		if s, ok := v.(string); ok && len(s) > maxLen {
 			out[k] = truncateStr(s, maxLen)

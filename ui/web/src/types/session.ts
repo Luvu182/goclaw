@@ -25,7 +25,7 @@ export interface SessionPreview {
   summary?: string;
 }
 
-/** Message format from Go providers.Message */
+/** Message format from Go providers.Message (field names match Go JSON tags) */
 export interface Message {
   role: "user" | "assistant" | "tool";
   content: string;

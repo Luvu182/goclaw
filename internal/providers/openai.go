@@ -228,10 +228,13 @@ func (p *OpenAIProvider) ChatStream(ctx context.Context, req ChatRequest, onChun
 	scanner.Buffer(make([]byte, 0, SSEScanBufInit), SSEScanBufMax)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "data: ") {
+		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
-		data := strings.TrimPrefix(line, "data: ")
+		// SSE spec allows both "data: value" and "data:value" (space is optional).
+		// Some providers (e.g. Kimi) omit the space after the colon.
+		data := strings.TrimPrefix(line, "data:")
+		data = strings.TrimPrefix(data, " ")
 		if data == "[DONE]" {
 			break
 		}
@@ -590,7 +593,7 @@ func (p *OpenAIProvider) doRequest(ctx context.Context, body any) (io.ReadCloser
 	if p.siteTitle != "" {
 		httpReq.Header.Set("X-Title", p.siteTitle)
 	}
-	httpReq.Header.Set("User-Agent", "claude-code/2.1.63")
+	httpReq.Header.Set("User-Agent", "claude-code/2.1.66")
 	httpReq.Header.Set("HTTP-Referer", "https://claude.ai")
 	httpReq.Header.Set("X-Title", "Claude Code")
 
