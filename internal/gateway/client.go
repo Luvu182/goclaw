@@ -25,7 +25,7 @@ type Client struct {
 	send          chan []byte
 
 	connectedAt time.Time // when the client connected
-	remoteAddr  string    // peer IP (extracted from proxy headers or RemoteAddr)
+	remoteAddr  string    // peer IP:port from websocket
 
 	locale string              // user's preferred locale (e.g. "en", "vi", "zh")
 	scopes []permissions.Scope // API key scopes (empty = role-based auth, no scope restriction)
@@ -44,13 +44,11 @@ type Client struct {
 	tenantSlug string    // resolved tenant URL slug (set during connect)
 }
 
-func NewClient(conn *websocket.Conn, server *Server, remoteIP, userAgent string) *Client {
+func NewClient(conn *websocket.Conn, server *Server, remoteIP string) *Client {
 	return &Client{
 		id:          uuid.NewString(),
 		conn:        conn,
 		server:      server,
-		remoteIP:    remoteIP,
-		userAgent:   userAgent,
 		send:        make(chan []byte, 256),
 		connectedAt: time.Now(),
 		remoteAddr:  remoteIP,
