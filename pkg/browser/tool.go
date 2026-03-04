@@ -26,19 +26,19 @@ func (t *BrowserTool) Name() string { return "browser" }
 
 func (t *BrowserTool) Description() string {
 	return `Control a browser to navigate web pages, take accessibility snapshots, and interact with elements.
+The browser auto-starts on first use — no need to call "start" explicitly.
 
 Actions:
-- status: Get browser status
-- start: Launch browser
-- stop: Close browser
-- tabs: List open tabs
-- open: Open a new tab (requires targetUrl)
-- close: Close a tab (requires targetId)
+- open: Open a new tab (requires targetUrl). Returns targetId for subsequent actions.
 - snapshot: Get page accessibility tree with element refs (use targetId, maxChars, interactive, compact, depth)
-- screenshot: Capture page screenshot (use targetId, fullPage)
+- screenshot: Capture page screenshot as image (use targetId, fullPage)
 - navigate: Navigate tab to URL (requires targetId, targetUrl)
+- act: Interact with elements (requires targetId and request object)
+- tabs: List open tabs
+- close: Close a tab (requires targetId)
 - console: Get browser console messages (requires targetId)
-- act: Interact with elements (requires request object with kind, ref, etc.)
+- status: Get browser status
+- start/stop: Manually control browser lifecycle (rarely needed)
 
 Act kinds: click, type, press, hover, wait, evaluate
 - click: Click element (request: {kind:"click", ref:"e1"})
@@ -48,7 +48,7 @@ Act kinds: click, type, press, hover, wait, evaluate
 - wait: Wait for condition (request: {kind:"wait", timeMs:1000} or {kind:"wait", text:"loaded"})
 - evaluate: Run JavaScript (request: {kind:"evaluate", fn:"document.title"})
 
-Workflow: start → open URL → snapshot (get refs) → act (use refs) → snapshot again`
+Workflow: open URL → snapshot (get refs) → act (use refs) → snapshot again`
 }
 
 func (t *BrowserTool) Parameters() map[string]any {
@@ -145,7 +145,7 @@ func (t *BrowserTool) Execute(ctx context.Context, args map[string]any) *tools.R
 
 	// Auto-start browser for actions that need it
 	switch action {
-	case "open", "snapshot", "screenshot", "navigate", "act", "tabs":
+	case "open", "snapshot", "screenshot", "navigate", "act", "tabs", "console":
 		if err := t.manager.Start(ctx); err != nil {
 			return tools.ErrorResult(fmt.Sprintf("failed to start browser: %v", err))
 		}
@@ -227,7 +227,18 @@ func (t *BrowserTool) handleOpen(ctx context.Context, args map[string]any) *tool
 	if err != nil {
 		return tools.ErrorResult(err.Error())
 	}
-	return jsonResult(tab)
+
+	// Auto-snapshot after open so the agent has page context immediately
+	opts := DefaultSnapshotOptions()
+	snap, snapErr := t.manager.Snapshot(ctx, tab.TargetID, opts)
+	if snapErr != nil {
+		// Snapshot failed — still return tab info so the agent can proceed
+		return jsonResult(tab)
+	}
+
+	header := fmt.Sprintf("Page: %s\nURL: %s\nTargetID: %s\nStats: %d refs, %d interactive\n\n",
+		snap.Title, snap.URL, snap.TargetID, snap.Stats.Refs, snap.Stats.Interactive)
+	return tools.NewResult(header + snap.Snapshot)
 }
 
 func (t *BrowserTool) handleClose(ctx context.Context, args map[string]any) *tools.Result {
