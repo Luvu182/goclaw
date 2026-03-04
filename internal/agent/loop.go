@@ -475,7 +475,6 @@ func (l *Loop) runLoop(ctx context.Context, req RunRequest) (result *RunResult, 
 		assistantMsg := providers.Message{
 			Role:                "assistant",
 			Content:             resp.Content,
-			Thinking:            resp.Thinking, // preserve reasoning_content for providers that require it (Kimi, DeepSeek)
 			ToolCalls:           resp.ToolCalls,
 			Phase:               resp.Phase,               // preserve Codex phase metadata (gpt-5.3-codex)
 			RawAssistantContent: resp.RawAssistantContent, // preserve thinking blocks for Anthropic passback

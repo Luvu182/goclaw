@@ -372,21 +372,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `{"status":"ok","protocol":%d}`, protocol.ProtocolVersion)
 }
 
-// clientIP extracts the real client IP from the request, checking proxy headers first.
-func clientIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		if i := strings.IndexByte(fwd, ','); i > 0 {
-			return strings.TrimSpace(fwd[:i])
-		}
-		return strings.TrimSpace(fwd)
-	}
-	host, _, _ := net.SplitHostPort(r.RemoteAddr)
-	return host
-}
-
 // Router returns the method router for registering additional handlers.
 func (s *Server) Router() *MethodRouter { return s.router }
 

@@ -228,13 +228,10 @@ func (p *OpenAIProvider) ChatStream(ctx context.Context, req ChatRequest, onChun
 	scanner.Buffer(make([]byte, 0, SSEScanBufInit), SSEScanBufMax)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "data:") {
+		if !strings.HasPrefix(line, "data: ") {
 			continue
 		}
-		// SSE spec allows both "data: value" and "data:value" (space is optional).
-		// Some providers (e.g. Kimi) omit the space after the colon.
-		data := strings.TrimPrefix(line, "data:")
-		data = strings.TrimPrefix(data, " ")
+		data := strings.TrimPrefix(line, "data: ")
 		if data == "[DONE]" {
 			break
 		}
