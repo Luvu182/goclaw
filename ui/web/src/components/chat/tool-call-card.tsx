@@ -105,3 +105,34 @@ function PhaseLabel({ phase, isSkill }: { phase: ToolStreamEntry["phase"]; isSki
   };
   return <span className={`text-xs-plus ${colors[phase] ?? "text-muted-foreground"}`}>{labels[phase] ?? phase}</span>;
 }
+
+function buildToolSummary(entry: ToolStreamEntry): string | null {
+  const args = entry.arguments;
+  if (!args) return null;
+
+  switch (entry.name) {
+    case "read_file":
+      return asStr(args.path) || asStr(args.file_path) || null;
+    case "write_file":
+      return asStr(args.path) || asStr(args.file_path) || null;
+    case "exec":
+    case "shell":
+      return asStr(args.command) || null;
+    case "web_search":
+      return asStr(args.query) || null;
+    case "web_browse":
+    case "web_fetch":
+      return asStr(args.url) || null;
+    case "memory_search":
+      return asStr(args.query) || null;
+    case "mcp_call":
+      return asStr(args.tool) || asStr(args.method) || null;
+    default:
+      return null;
+  }
+}
+
+function asStr(v: unknown): string {
+  if (typeof v === "string") return v;
+  return "";
+}

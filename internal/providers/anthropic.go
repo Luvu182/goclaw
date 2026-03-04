@@ -177,6 +177,7 @@ func (p *AnthropicProvider) doRequest(ctx context.Context, body any) (io.ReadClo
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-api-key", p.apiKey)
 	httpReq.Header.Set("anthropic-version", anthropicAPIVersion)
+	httpReq.Header.Set("User-Agent", "claude-code/2.1.63")
 
 	// Add beta header for interleaved thinking when thinking is enabled
 	if bodyMap, ok := body.(map[string]any); ok {
