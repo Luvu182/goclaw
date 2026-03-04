@@ -22,6 +22,8 @@ type Client struct {
 	authenticated bool
 	role          permissions.Role
 	userID        string // external user ID (TEXT, free-form), set during connect
+	remoteIP      string // client IP from X-Real-IP / X-Forwarded-For / RemoteAddr
+	userAgent     string // User-Agent header
 	send          chan []byte
 
 	connectedAt time.Time // when the client connected
@@ -44,11 +46,13 @@ type Client struct {
 	tenantSlug string    // resolved tenant URL slug (set during connect)
 }
 
-func NewClient(conn *websocket.Conn, server *Server, remoteIP string) *Client {
+func NewClient(conn *websocket.Conn, server *Server, remoteIP, userAgent string) *Client {
 	return &Client{
 		id:          uuid.NewString(),
 		conn:        conn,
 		server:      server,
+		remoteIP:    remoteIP,
+		userAgent:   userAgent,
 		send:        make(chan []byte, 256),
 		connectedAt: time.Now(),
 		remoteAddr:  remoteIP,
