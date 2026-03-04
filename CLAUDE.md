@@ -91,27 +91,8 @@ ui/desktop/                   Wails v2 desktop app (React frontend + embedded ga
 - **Telegram formatting:** LLM output → `SanitizeAssistantContent()` → `markdownToTelegramHTML()` → `chunkHTML()` → `sendHTML()`. Tables rendered as ASCII in `<pre>` tags
 - **i18n:** Web UI uses `i18next` with namespace-split locale files in `ui/web/src/i18n/locales/{lang}/`. Backend uses `internal/i18n` message catalog with `i18n.T(locale, key, args...)`. Locale propagated via `store.WithLocale(ctx)` — WS `connect` param `locale`, HTTP `Accept-Language` header. Supported: en (default), vi, zh. New user-facing strings: add key to `internal/i18n/keys.go`, add translations to all 3 catalog files. New UI strings: add key to all 3 locale dirs. Bootstrap templates (SOUL.md, etc.) stay English-only (LLM consumption).
 
-## Git & PR Rules
-
-- **Fork**: `Luvu182/goclaw` (remote name `fork`). Upstream: `nextlevelbuilder/goclaw` (remote name `origin`)
-- **Git author**: `Luvu182 <208665161+Luvu182@users.noreply.github.com>`
-- **No Co-Authored-By** lines in commits
-- **NEVER push directly to `origin`** — only push to `fork`
-- **NEVER create a PR without explicit user approval** — always ask first
-- **PR only for community-valuable changes**: real bug fixes affecting multiple users, security fixes, missing feature parity
-- **Do NOT PR**: personal preferences (debug UI, custom config), header spoofing, changes touching core logic unless it's a clear bug
-- **Keep personal changes on fork branches only** (`personal/*`), never create PRs from them
-- **Branch naming**: `fix/*` for bug fix PRs, `feat/*` for feature PRs, `personal/*` for private changes
-
 ## Running
 
-**Docker (managed mode — MUST use all 3 compose files):**
-```bash
-docker compose -f docker-compose.yml -f docker-compose.managed.yml -f docker-compose.selfservice.yml up -d --build
-```
-Do NOT use `docker compose up -d` alone — it misses managed + selfservice config and will break the deployment.
-
-**Local dev:**
 ```bash
 go build -o goclaw . && ./goclaw onboard && source .env.local && ./goclaw
 ./goclaw migrate up                 # DB migrations
