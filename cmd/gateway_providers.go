@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -40,6 +41,14 @@ func registerProviders(registry *providers.Registry, cfg *config.Config, modelRe
 		registry.Register(providers.NewOpenAIProvider("openai", cfg.Providers.OpenAI.APIKey, cfg.Providers.OpenAI.APIBase, "gpt-4o").
 			WithRegistry(modelReg))
 		slog.Info("registered provider", "name", "openai")
+	}
+
+	// OAuth token → register "openai-codex" provider (Responses API wire format)
+	if tokenPath := oauth.DefaultTokenPath(); oauth.TokenFileExists(tokenPath) {
+		encKey := os.Getenv("GOCLAW_ENCRYPTION_KEY")
+		ts := oauth.NewTokenSource(tokenPath, encKey)
+		registry.Register(providers.NewCodexProvider("openai-codex", ts, "", "gpt-5.3-codex"))
+		slog.Info("registered provider via OAuth", "name", "openai-codex")
 	}
 
 	if cfg.Providers.OpenRouter.APIKey != "" {
