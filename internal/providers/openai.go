@@ -17,6 +17,11 @@ import (
 	"strings"
 )
 
+// TokenSource provides a dynamic access token (e.g. from OAuth with auto-refresh).
+type TokenSource interface {
+	Token() (string, error)
+}
+
 // OpenAIProvider implements Provider for OpenAI-compatible APIs
 // (OpenAI, Groq, OpenRouter, DeepSeek, VLLM, etc.)
 type OpenAIProvider struct {
