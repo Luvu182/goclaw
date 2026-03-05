@@ -19,6 +19,9 @@ const (
 	minEncDataLen      = 48
 )
 
+// UploadCallback is called when a file upload completes via WebSocket notification.
+type UploadCallback func(fileID, fileURL string)
+
 // Listener connects to Zalo's WebSocket and dispatches messages.
 type Listener struct {
 	mu   sync.RWMutex
