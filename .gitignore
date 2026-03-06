@@ -88,3 +88,6 @@ compose.d/*
 /mise.*.toml
 /mise
 /.mise
+
+# Browser cookies (sensitive)
+.cookies/

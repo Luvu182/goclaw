@@ -111,6 +111,9 @@ func setupToolRegistry(
 		if cfg.Tools.Browser.MaxPages > 0 {
 			opts = append(opts, browser.WithMaxPages(cfg.Tools.Browser.MaxPages))
 		}
+		if cfg.Tools.Browser.CookiesDir != "" {
+			opts = append(opts, browser.WithCookiesDir(cfg.Tools.Browser.CookiesDir))
+		}
 		browserMgr = browser.New(opts...)
 		toolsReg.Register(browser.NewBrowserTool(browserMgr))
 	}

@@ -46,8 +46,8 @@ type SnapshotOptions struct {
 // DefaultSnapshotOptions returns sensible defaults.
 func DefaultSnapshotOptions() SnapshotOptions {
 	return SnapshotOptions{
-		MaxChars: 8000,
-		Limit:    500,
+		MaxChars: 16000,
+		Limit:    5000,
 	}
 }
 

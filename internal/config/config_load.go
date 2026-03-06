@@ -50,8 +50,9 @@ func Default() *Config {
 				DuckDuckGo: DuckDuckGoConfig{Enabled: true, MaxResults: 5},
 			},
 			Browser: BrowserToolConfig{
-				Enabled:  true,
-				Headless: true,
+				Enabled:    true,
+				Headless:   true,
+				CookiesDir: ".cookies",
 			},
 			ExecApproval: ExecApprovalCfg{
 				Security: "full",

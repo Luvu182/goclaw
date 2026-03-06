@@ -13,21 +13,23 @@ import (
 
 // Manager handles the Chrome browser lifecycle and page management.
 type Manager struct {
-	mu          sync.Mutex
-	browser     *rod.Browser
-	launcher    *launcher.Launcher // retained for PID-based cleanup on crash
-	refs        *RefStore
-	pages       map[string]*rod.Page        // targetID → page
-	console     map[string][]ConsoleMessage // targetID → console messages
-	tenantCtxs  map[string]*rod.Browser     // tenantID → incognito browser context
-	pageTenants map[string]string           // targetID → tenantID (for filtering)
-	pageLastUsed map[string]time.Time       // targetID → last access time
+	mu           sync.Mutex
+	browser      *rod.Browser
+	launcher     *launcher.Launcher // retained for PID-based cleanup on crash
+	refs         *RefStore
+	pages        map[string]*rod.Page        // targetID → page
+	console      map[string][]ConsoleMessage // targetID → console messages
+	tenantCtxs   map[string]*rod.Browser     // tenantID → incognito browser context
+	pageTenants  map[string]string           // targetID → tenantID (for filtering)
+	pageLastUsed map[string]time.Time        // targetID → last access time
 	headless      bool
 	remoteURL     string        // CDP endpoint for remote Chrome (sidecar); skips local launcher
 	actionTimeout time.Duration // per-action context timeout (default 30s)
 	idleTimeout   time.Duration // auto-close pages idle longer than this (default 10m, 0=disabled)
 	maxPages      int           // max open pages per tenant (default 5)
 	stopReaper    chan struct{} // signal to stop the reaper goroutine
+	cookiesDir    string        // directory with cookie JSON files for auto-loading
+	cookiesLoaded bool          // true after auto-loading cookies (once per browser session)
 	logger        *slog.Logger
 }
 
@@ -43,6 +45,11 @@ func WithHeadless(h bool) Option {
 // When set, Start() connects to the remote Chrome instead of launching locally.
 func WithRemoteURL(url string) Option {
 	return func(m *Manager) { m.remoteURL = url }
+}
+
+// WithCookiesDir sets a directory to auto-load cookie JSON files from.
+func WithCookiesDir(dir string) Option {
+	return func(m *Manager) { m.cookiesDir = dir }
 }
 
 // WithLogger sets a custom logger.
@@ -163,7 +170,8 @@ func (m *Manager) Start(ctx context.Context) error {
 			Set("disable-background-networking").
 			Set("disable-renderer-backgrounding").
 			Set("disable-background-timer-throttling").
-			Set("disable-backgrounding-occluded-windows")
+			Set("disable-backgrounding-occluded-windows").
+			Set("disable-blink-features", "AutomationControlled")
 
 		u, err := l.Launch()
 		if err != nil {
@@ -238,6 +246,7 @@ func (m *Manager) Stop(ctx context.Context) error {
 	m.console = make(map[string][]ConsoleMessage)
 	m.pageTenants = make(map[string]string)
 	m.pageLastUsed = make(map[string]time.Time)
+	m.cookiesLoaded = false
 	return err
 }
 

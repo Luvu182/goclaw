@@ -16,6 +16,7 @@ services:
       - --remote-allow-origins=*
       - --disable-gpu
       - --disable-dev-shm-usage
+      - --disable-blink-features=AutomationControlled
     ports:
       - "${CHROME_CDP_PORT:-9222}:9222"
     shm_size: 2gb
@@ -34,6 +35,8 @@ services:
   goclaw:
     environment:
       - GOCLAW_BROWSER_REMOTE_URL=ws://chrome:9222
+    volumes:
+      - ./.cookies:/app/.cookies:ro
     depends_on:
       chrome:
         condition: service_healthy

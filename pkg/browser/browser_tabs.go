@@ -90,6 +90,9 @@ func (m *Manager) OpenTab(ctx context.Context, url string) (*TabInfo, error) {
 		return nil, fmt.Errorf("open tab: %w", err)
 	}
 
+	// Inject stealth scripts before page renders
+	injectStealth(page)
+
 	if err := page.WaitStable(300 * time.Millisecond); err != nil {
 		return nil, fmt.Errorf("wait stable: %w", err)
 	}

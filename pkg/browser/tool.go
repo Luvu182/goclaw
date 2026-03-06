@@ -41,11 +41,15 @@ Actions:
 - navigate: Navigate tab to URL (requires targetId, targetUrl)
 - act: Interact with elements (requires targetId and request object)
 - console: Get browser console messages (requires targetId)
+- setCookies: Load cookies from a JSON file exported by browser extensions like EditThisCookie (requires cookiesFile path). Set cookies BEFORE opening the target URL so the browser has a valid session.
+- status: Get browser status (includes headless mode)
+- restart: Restart browser with different mode (use headless param). Useful when a site blocks headless browsers — switch to headless=false (full Chrome) and retry.
+- start/stop: Manually control browser lifecycle (rarely needed)
 
 Headless mode:
-- headless=true: faster, no GUI, but some sites detect and block headless browsers (Cloudflare, etc.)
-- headless=false: full Chrome, bypasses most headless detection
-- If a page shows a bot challenge or empty content, try restart with headless=false.
+- headless=true: faster, no GUI needed, but some sites detect and block headless browsers
+- headless=false: full Chrome, bypasses most headless detection but requires a display server
+- Use "status" to check current mode. If a page shows a bot challenge or blank content, try restart with headless=false.
 
 Act kinds: click, type, press, hover, wait, evaluate
 - click: Click element (request: {kind:"click", ref:"e1"})
@@ -54,6 +58,12 @@ Act kinds: click, type, press, hover, wait, evaluate
 - hover: Hover element (request: {kind:"hover", ref:"e1"})
 - wait: Wait for condition (request: {kind:"wait", timeMs:1000} or {kind:"wait", text:"loaded"})
 - evaluate: Run JavaScript (request: {kind:"evaluate", fn:"document.title"})
+
+Snapshot tips:
+- interactive=false (default): shows ALL content including text, headings, articles — use this to READ page content
+- interactive=true: shows ONLY buttons/links/inputs — use this to find clickable elements, NOT for reading content
+- compact=true: removes empty structural divs, recommended for content-heavy pages (Facebook, etc.)
+- For large pages: increase maxChars (default 16000) to see more content
 
 Workflow: open URL → snapshot (get refs) → act (use refs) → snapshot again`
 }
@@ -64,7 +74,7 @@ func (t *BrowserTool) Parameters() map[string]any {
 		"properties": map[string]any{
 			"action": map[string]any{
 				"type":        "string",
-				"enum":        []string{"status", "start", "stop", "restart", "tabs", "open", "close", "snapshot", "screenshot", "navigate", "console", "act"},
+				"enum":        []string{"status", "start", "stop", "restart", "tabs", "open", "close", "snapshot", "screenshot", "navigate", "console", "act", "setCookies"},
 				"description": "The browser action to perform",
 			},
 			"headless": map[string]any{
@@ -102,6 +112,10 @@ func (t *BrowserTool) Parameters() map[string]any {
 			"timeoutMs": map[string]any{
 				"type":        "number",
 				"description": "Timeout in milliseconds for actions",
+			},
+			"cookiesFile": map[string]any{
+				"type":        "string",
+				"description": "Path to cookies JSON file (for setCookies action). Export from EditThisCookie or Cookie-Editor extension.",
 			},
 			"request": map[string]any{
 				"type":        "object",
@@ -156,7 +170,7 @@ func (t *BrowserTool) Execute(ctx context.Context, args map[string]any) *tools.R
 
 	// Auto-start browser for actions that need it
 	switch action {
-	case "open", "snapshot", "screenshot", "navigate", "act", "tabs", "console":
+	case "open", "snapshot", "screenshot", "navigate", "act", "tabs", "console", "setCookies":
 		if err := t.manager.Start(ctx); err != nil {
 			return tools.ErrorResult(fmt.Sprintf("failed to start browser: %v", err))
 		}
@@ -199,6 +213,8 @@ func (t *BrowserTool) Execute(ctx context.Context, args map[string]any) *tools.R
 		return t.handleConsole(ctx, args)
 	case "act":
 		return t.handleAct(ctx, args)
+	case "setCookies":
+		return t.handleSetCookies(ctx, args)
 	default:
 		return tools.ErrorResult(fmt.Sprintf("unknown action: %s", action))
 	}
@@ -255,13 +271,27 @@ func (t *BrowserTool) handleOpen(ctx context.Context, args map[string]any) *tool
 	if url == "" {
 		return tools.ErrorResult("targetUrl is required for open action")
 	}
+
+	// Auto-load cookies from configured dir (once per browser session)
+	t.manager.AutoLoadCookies(ctx)
+
 	tab, err := t.manager.OpenTab(ctx, url)
 	if err != nil {
 		return tools.ErrorResult(err.Error())
 	}
 
-	// Auto-snapshot after open so the agent has page context immediately
+	// Auto-snapshot after open so the agent has page context immediately.
+	// Always use compact + non-interactive to show CONTENT (text, posts, articles),
+	// not just buttons. Agent can use snapshot action with interactive=true later.
 	opts := DefaultSnapshotOptions()
+	opts.Compact = true
+	opts.Interactive = false // always show content on open
+	if mc, ok := args["maxChars"].(float64); ok && mc > 0 {
+		opts.MaxChars = int(mc)
+	}
+	if d, ok := args["depth"].(float64); ok {
+		opts.MaxDepth = int(d)
+	}
 	snap, snapErr := t.manager.Snapshot(ctx, tab.TargetID, opts)
 	if snapErr != nil {
 		// Snapshot failed — still return tab info so the agent can proceed
@@ -341,6 +371,9 @@ func (t *BrowserTool) handleNavigate(ctx context.Context, args map[string]any) *
 	if url == "" {
 		return tools.ErrorResult("targetUrl is required for navigate action")
 	}
+
+	// Auto-load cookies from configured dir (once per browser session)
+	t.manager.AutoLoadCookies(ctx)
 
 	if err := t.manager.Navigate(ctx, targetID, url); err != nil {
 		return tools.ErrorResult(err.Error())
@@ -459,6 +492,18 @@ func (t *BrowserTool) handleAct(ctx context.Context, args map[string]any) *tools
 	default:
 		return tools.ErrorResult(fmt.Sprintf("unknown act kind: %s", kind))
 	}
+}
+
+func (t *BrowserTool) handleSetCookies(ctx context.Context, args map[string]any) *tools.Result {
+	cookiesFile, _ := args["cookiesFile"].(string)
+	if cookiesFile == "" {
+		return tools.ErrorResult("cookiesFile parameter is required for setCookies action")
+	}
+	count, err := t.manager.SetCookiesFromFile(ctx, cookiesFile)
+	if err != nil {
+		return tools.ErrorResult(fmt.Sprintf("failed to set cookies: %v", err))
+	}
+	return tools.NewResult(fmt.Sprintf("Successfully set %d cookies from %s. You can now open/navigate to the target site with an authenticated session.", count, cookiesFile))
 }
 
 func jsonResult(v any) *tools.Result {
