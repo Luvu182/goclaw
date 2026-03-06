@@ -26,19 +26,26 @@ func (t *BrowserTool) Name() string { return "browser" }
 
 func (t *BrowserTool) Description() string {
 	return `Control a browser to navigate web pages, take accessibility snapshots, and interact with elements.
-The browser auto-starts on first use — no need to call "start" explicitly.
+The browser auto-starts on first use.
 
 Actions:
+- status: Get browser status (includes current headless mode)
+- start: Launch browser
+- stop: Close browser
+- restart: Restart browser with different headless mode (use headless param). Useful when a site blocks headless browsers — switch to headless=false and retry.
+- tabs: List open tabs
 - open: Open a new tab (requires targetUrl). Returns targetId for subsequent actions.
+- close: Close a tab (requires targetId)
 - snapshot: Get page accessibility tree with element refs (use targetId, maxChars, interactive, compact, depth)
 - screenshot: Capture page screenshot as image (use targetId, fullPage)
 - navigate: Navigate tab to URL (requires targetId, targetUrl)
 - act: Interact with elements (requires targetId and request object)
-- tabs: List open tabs
-- close: Close a tab (requires targetId)
 - console: Get browser console messages (requires targetId)
-- status: Get browser status
-- start/stop: Manually control browser lifecycle (rarely needed)
+
+Headless mode:
+- headless=true: faster, no GUI, but some sites detect and block headless browsers (Cloudflare, etc.)
+- headless=false: full Chrome, bypasses most headless detection
+- If a page shows a bot challenge or empty content, try restart with headless=false.
 
 Act kinds: click, type, press, hover, wait, evaluate
 - click: Click element (request: {kind:"click", ref:"e1"})
@@ -57,8 +64,12 @@ func (t *BrowserTool) Parameters() map[string]any {
 		"properties": map[string]any{
 			"action": map[string]any{
 				"type":        "string",
-				"enum":        []string{"status", "start", "stop", "tabs", "open", "close", "snapshot", "screenshot", "navigate", "console", "act"},
+				"enum":        []string{"status", "start", "stop", "restart", "tabs", "open", "close", "snapshot", "screenshot", "navigate", "console", "act"},
 				"description": "The browser action to perform",
+			},
+			"headless": map[string]any{
+				"type":        "boolean",
+				"description": "Set headless mode (for restart action). true=headless, false=full Chrome",
 			},
 			"targetUrl": map[string]any{
 				"type":        "string",
@@ -170,6 +181,8 @@ func (t *BrowserTool) Execute(ctx context.Context, args map[string]any) *tools.R
 		return t.handleStart(ctx)
 	case "stop":
 		return t.handleStop(ctx)
+	case "restart":
+		return t.handleRestart(ctx, args)
 	case "tabs":
 		return t.handleTabs(ctx)
 	case "open":
@@ -208,6 +221,25 @@ func (t *BrowserTool) handleStop(ctx context.Context) *tools.Result {
 		return tools.ErrorResult(fmt.Sprintf("failed to stop browser: %v", err))
 	}
 	return tools.NewResult("Browser stopped.")
+}
+
+func (t *BrowserTool) handleRestart(ctx context.Context, args map[string]interface{}) *tools.Result {
+	headless, ok := args["headless"].(bool)
+	if !ok {
+		return tools.ErrorResult("headless parameter (true/false) is required for restart action")
+	}
+	if err := t.manager.SetHeadless(ctx, headless); err != nil {
+		return tools.ErrorResult(fmt.Sprintf("failed to switch mode: %v", err))
+	}
+	// Ensure browser is running after mode change
+	if err := t.manager.Start(ctx); err != nil {
+		return tools.ErrorResult(fmt.Sprintf("failed to start browser: %v", err))
+	}
+	mode := "headless"
+	if !headless {
+		mode = "full (non-headless)"
+	}
+	return tools.NewResult(fmt.Sprintf("Browser restarted in %s mode.", mode))
 }
 
 func (t *BrowserTool) handleTabs(ctx context.Context) *tools.Result {

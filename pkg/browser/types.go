@@ -93,7 +93,8 @@ type ConsoleMessage struct {
 
 // StatusInfo describes the current browser state.
 type StatusInfo struct {
-	Running bool   `json:"running"`
-	Tabs    int    `json:"tabs"`
-	URL     string `json:"url,omitempty"` // current tab URL
+	Running  bool   `json:"running"`
+	Headless bool   `json:"headless"`
+	Tabs     int    `json:"tabs"`
+	URL      string `json:"url,omitempty"` // current tab URL
 }

@@ -95,6 +95,30 @@ func (m *Manager) touchPageLocked(targetID string) {
 	m.pageLastUsed[targetID] = time.Now()
 }
 
+// SetHeadless changes headless mode and restarts Chrome if running.
+func (m *Manager) SetHeadless(ctx context.Context, headless bool) error {
+	if m.headless == headless {
+		return nil
+	}
+	if m.remoteURL != "" {
+		return fmt.Errorf("cannot change headless mode when using remote Chrome")
+	}
+	wasRunning := m.browser != nil
+	if wasRunning {
+		if err := m.Stop(ctx); err != nil {
+			return fmt.Errorf("stop browser: %w", err)
+		}
+	}
+	m.headless = headless
+	if wasRunning {
+		if err := m.Start(ctx); err != nil {
+			return fmt.Errorf("restart browser: %w", err)
+		}
+	}
+	m.logger.Info("browser mode changed", "headless", headless)
+	return nil
+}
+
 // Start launches a local Chrome browser or connects to a remote one.
 // If already connected but the connection is dead, it reconnects automatically.
 func (m *Manager) Start(ctx context.Context) error {
@@ -279,13 +303,14 @@ func (m *Manager) Status() *StatusInfo {
 	defer m.mu.Unlock()
 
 	if m.browser == nil {
-		return &StatusInfo{Running: false}
+		return &StatusInfo{Running: false, Headless: m.headless}
 	}
 
 	pages, _ := m.browser.Pages()
 	info := &StatusInfo{
-		Running: true,
-		Tabs:    len(pages),
+		Running:  true,
+		Headless: m.headless,
+		Tabs:     len(pages),
 	}
 	if len(pages) > 0 {
 		if pageInfo, err := pages[0].Info(); err == nil {
