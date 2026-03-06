@@ -43,14 +43,6 @@ func registerProviders(registry *providers.Registry, cfg *config.Config, modelRe
 		slog.Info("registered provider", "name", "openai")
 	}
 
-	// OAuth token → register "openai-codex" provider (Responses API wire format)
-	if tokenPath := oauth.DefaultTokenPath(); oauth.TokenFileExists(tokenPath) {
-		encKey := os.Getenv("GOCLAW_ENCRYPTION_KEY")
-		ts := oauth.NewTokenSource(tokenPath, encKey)
-		registry.Register(providers.NewCodexProvider("openai-codex", ts, "", "gpt-5.3-codex"))
-		slog.Info("registered provider via OAuth", "name", "openai-codex")
-	}
-
 	if cfg.Providers.OpenRouter.APIKey != "" {
 		orProv := providers.NewOpenAIProvider("openrouter", cfg.Providers.OpenRouter.APIKey, "https://openrouter.ai/api/v1", "anthropic/claude-sonnet-4-5-20250929")
 		orProv.WithSiteInfo("https://goclaw.sh", "GoClaw")
