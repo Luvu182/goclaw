@@ -32,7 +32,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   // Tool-only message (no text content) — render compact without bubble wrapper
   const isToolOnly = isAssistant && !hasContent && !hasThinking && (hasToolDetails || hasToolCalls);
 
-
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
