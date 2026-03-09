@@ -300,9 +300,6 @@ func (p *ProvidersConfig) APIBaseForType(providerType string) string {
 // HasAnyProvider returns true if at least one provider has an API key configured,
 // a CLI path set, or an OAuth token is available.
 func (c *Config) HasAnyProvider() bool {
-	if c.HasOAuthToken {
-		return true
-	}
 	p := c.Providers
 	return p.Anthropic.APIKey != "" ||
 		p.OpenAI.APIKey != "" ||

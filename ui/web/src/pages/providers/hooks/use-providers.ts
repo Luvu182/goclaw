@@ -7,9 +7,6 @@ import { toast } from "@/stores/use-toast-store";
 import type { ProviderData, ProviderInput } from "@/types/provider";
 
 export type { ProviderData, ProviderInput };
-export { OAUTH_PROVIDER_ID };
-
-const OAUTH_PROVIDER_ID = "__oauth_openai__";
 
 export function useProviders(enabled = true) {
   const http = useHttp();
@@ -19,25 +16,8 @@ export function useProviders(enabled = true) {
     queryKey: queryKeys.providers.all,
     enabled,
     queryFn: async () => {
-      const [provRes, oauthRes] = await Promise.all([
-        http.get<{ providers: ProviderData[] }>("/v1/providers"),
-        http.get<{ authenticated: boolean }>("/v1/auth/openai/status").catch(() => null),
-      ]);
-      const list = provRes.providers ?? [];
-      if (oauthRes?.authenticated) {
-        list.push({
-          id: OAUTH_PROVIDER_ID,
-          name: "openai-codex",
-          display_name: "ChatGPT (OAuth)",
-          provider_type: "chatgpt_oauth",
-          api_base: "https://api.openai.com/v1",
-          api_key: "oauth",
-          enabled: true,
-          created_at: "",
-          updated_at: "",
-        });
-      }
-      return list;
+      const res = await http.get<{ providers: ProviderData[] }>("/v1/providers");
+      return res.providers ?? [];
     },
     staleTime: 60_000,
   });
