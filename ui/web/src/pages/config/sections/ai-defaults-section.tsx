@@ -23,13 +23,18 @@ interface Props {
 
 export function AiDefaultsSection({ data, onSave, saving }: Props) {
   const { t } = useTranslation("config");
+  // Initialize draft from data. On first mount data may be undefined — the
+  // useEffect below syncs draft once data arrives. We track whether the sync
+  // has happened so ProviderModelSelect doesn't see a stale empty provider.
   const [draft, setDraft] = useState<AgentsData>(data ?? DEFAULT);
+  const [synced, setSynced] = useState(!!data);
   const [dirty, setDirty] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [openSubs, setOpenSubs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setDraft(data ?? DEFAULT);
+    setSynced(!!data);
     setDirty(false);
     setSaveError(null);
   }, [data]);
@@ -61,7 +66,7 @@ export function AiDefaultsSection({ data, onSave, saving }: Props) {
     });
   };
 
-  if (!data) return null;
+  if (!data || !synced) return null;
 
   const subagents = defaults.subagents ?? {};
   const memory = defaults.memory ?? {};
