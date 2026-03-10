@@ -86,7 +86,6 @@ export interface ToolStreamEntry {
   errorContent?: string;
   startedAt: number;
   updatedAt: number;
-  result?: string;
 }
 
 /** Chat send response from chat.send RPC */

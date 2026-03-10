@@ -35,7 +35,7 @@ interface ProviderModelSelectProps {
   savedModel?: string;
   /** Called when verification status changes. True = save should be blocked (changed but not verified). */
   onSaveBlockedChange?: (blocked: boolean) => void;
-  /** When true, skip auto-selecting the first provider when none is set. Useful when empty means "use default". */
+  /** When true, allows provider to be empty (adds an "(auto)" option and skips auto-select). */
   allowEmpty?: boolean;
   /** When true, only show providers with settings.embedding.enabled. */
   filterEmbedding?: boolean;
