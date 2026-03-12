@@ -27,8 +27,8 @@ func MediaAudioRefsFromCtx(ctx context.Context) []providers.MediaRef {
 
 // --- ReadAudioTool ---
 
-// audioMaxBytes is the max file size for audio analysis (50MB).
-const audioMaxBytes = 50 * 1024 * 1024
+// audioMaxBytes is the max file size for audio analysis (200MB).
+const audioMaxBytes = 200 * 1024 * 1024
 
 // audioProviderPriority is the order in which providers are tried for audio analysis.
 var audioProviderPriority = []string{"gemini", "openai", "openrouter"}

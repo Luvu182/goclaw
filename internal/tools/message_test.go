@@ -70,6 +70,7 @@ func TestResolveMediaPath(t *testing.T) {
 			// Outside workspace + outside /tmp/ → blocked
 			{"outside workspace", "MEDIA:" + outsidePath(workspaceCanonical, "etc/passwd"), "", false},
 			{"traversal attack", "MEDIA:" + filepath.Join(workspaceCanonical, "..", "etc", "passwd"), "", false},
+			{"traversal from tmp", "MEDIA:/tmp/../etc/passwd", "", false},
 		}
 
 		for _, tt := range tests {
