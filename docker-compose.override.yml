@@ -1,0 +1,9 @@
+# Local overrides — not committed to git.
+# Mount Telegram local Bot API data dir so goclaw can read downloaded files.
+# group_add: "0" gives the goclaw user read access to root-owned Bot API files.
+services:
+  goclaw:
+    group_add:
+      - "0"
+    volumes:
+      - /var/telegram-bot/data:/var/telegram-bot/data:ro
