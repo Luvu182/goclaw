@@ -323,8 +323,10 @@ export function HeartbeatConfigDialog({
                       size="sm"
                       className="h-6 w-6 p-0 shrink-0"
                       onClick={async () => {
-                        await revokePermission(p.userId, p.scope);
-                        setPermissions((prev) => prev.filter((x) => x.id !== p.id));
+                        try {
+                          await revokePermission(p.userId, p.scope);
+                          setPermissions((prev) => prev.filter((x) => x.id !== p.id));
+                        } catch { /* toast handled by hook */ }
                       }}
                     >
                       <Trash2 className="h-3 w-3 text-muted-foreground" />

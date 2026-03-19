@@ -549,6 +549,10 @@ func (m *HeartbeatMethods) handlePermissionsGrant(ctx context.Context, client *g
 	if perm == "" {
 		perm = "allow"
 	}
+	if perm != "allow" && perm != "deny" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, "permission must be 'allow' or 'deny'"))
+		return
+	}
 	grantedBy := client.UserID()
 	if err := m.permStore.Grant(ctx, &store.ConfigPermission{
 		AgentID:    agentUUID,
