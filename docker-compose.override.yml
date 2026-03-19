@@ -3,6 +3,9 @@
 # group_add: "0" gives the goclaw user read access to root-owned Bot API files.
 services:
   goclaw:
+    build:
+      args:
+        ENABLE_NODE: "true"
     group_add:
       - "0"
     volumes:
