@@ -101,7 +101,8 @@ func (t *Ticker) emitEvent(event store.HeartbeatEvent) {
 func (t *Ticker) Wake(agentID uuid.UUID) {
 	select {
 	case t.wakeCh <- agentID:
-	default: // channel full, skip
+	default:
+		slog.Warn("heartbeat.wake_dropped", "agent_id", agentID, "reason", "channel full")
 	}
 }
 
@@ -449,12 +450,17 @@ func (t *Ticker) readChecklist(ctx context.Context, agentID uuid.UUID) string {
 // processResponse implements smart suppression.
 // If response contains HEARTBEAT_OK, agent confirms everything is fine — always suppress.
 // Only deliver when HEARTBEAT_OK is absent (agent found something needing attention).
-func processResponse(response string, _ int) (deliver bool, cleaned string) {
+func processResponse(response string, ackMaxChars int) (deliver bool, cleaned string) {
 	const ackToken = "HEARTBEAT_OK"
-	if strings.Contains(response, ackToken) {
-		return false, "" // agent says OK → suppress regardless of extra content
+	if !strings.Contains(response, ackToken) {
+		return true, response // no OK token → deliver
 	}
-	return true, response // no OK token → something needs attention, deliver
+	// Strip the token and check remaining content length.
+	stripped := strings.TrimSpace(strings.ReplaceAll(response, ackToken, ""))
+	if ackMaxChars <= 0 || len([]rune(stripped)) <= ackMaxChars {
+		return false, "" // remaining content within threshold → suppress
+	}
+	return true, stripped // content exceeds threshold → deliver without token
 }
 
 // isWithinActiveHours checks if current time falls within the configured active hours.
