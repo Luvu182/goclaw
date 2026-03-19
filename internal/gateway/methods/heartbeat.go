@@ -565,7 +565,6 @@ func (m *HeartbeatMethods) handlePermissionsGrant(ctx context.Context, client *g
 		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.grant", err)))
 		return
 	}
-	m.permStore.InvalidateCache()
 	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"ok": true}))
 	emitAudit(m.eventBus, client, "heartbeat.permissions.grant", "heartbeat", params.AgentID)
 }
@@ -605,7 +604,6 @@ func (m *HeartbeatMethods) handlePermissionsRevoke(ctx context.Context, client *
 		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.revoke", err)))
 		return
 	}
-	m.permStore.InvalidateCache()
 	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"ok": true}))
 	emitAudit(m.eventBus, client, "heartbeat.permissions.revoke", "heartbeat", params.AgentID)
 }
