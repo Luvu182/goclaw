@@ -963,7 +963,12 @@
     "logsTitle": "Heartbeat Logs",
     "refresh": "Refresh",
     "noLogs": "No heartbeat logs yet.",
-    "logsPagination": "{{from}}–{{to}} of {{total}}"
+    "logsPagination": "{{from}}–{{to}} of {{total}}",
+    "permissions": "Permissions",
+    "permissionsHint": "By default, anyone can modify heartbeat config. Add deny rules to restrict specific users, or allow rules to override denials.",
+    "permDeny": "Deny",
+    "permAllow": "Allow",
+    "permUserPlaceholder": "User / Sender ID"
   },
   "permissions": {
     "title": "Permissions",

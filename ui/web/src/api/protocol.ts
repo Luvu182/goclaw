@@ -164,6 +164,9 @@ export const Methods = {
   HEARTBEAT_CHECKLIST_GET: "heartbeat.checklist.get",
   HEARTBEAT_CHECKLIST_SET: "heartbeat.checklist.set",
   HEARTBEAT_TARGETS: "heartbeat.targets",
+  HEARTBEAT_PERMISSIONS_LIST: "heartbeat.permissions.list",
+  HEARTBEAT_PERMISSIONS_GRANT: "heartbeat.permissions.grant",
+  HEARTBEAT_PERMISSIONS_REVOKE: "heartbeat.permissions.revoke",
 
   // Config permissions
   CONFIG_PERMISSIONS_LIST: "config.permissions.list",

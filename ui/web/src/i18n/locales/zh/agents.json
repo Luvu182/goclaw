@@ -947,7 +947,12 @@
     "logsTitle": "心跳日志",
     "refresh": "刷新",
     "noLogs": "暂无心跳日志。",
-    "logsPagination": "{{from}}–{{to}} / 共 {{total}}"
+    "logsPagination": "{{from}}–{{to}} / 共 {{total}}",
+    "permissions": "权限管理",
+    "permissionsHint": "默认所有人都可以修改心跳配置。添加 deny 规则限制特定用户，或 allow 规则覆盖限制。",
+    "permDeny": "拒绝",
+    "permAllow": "允许",
+    "permUserPlaceholder": "用户 / 发送者 ID"
   },
   "permissions": {
     "title": "权限管理",

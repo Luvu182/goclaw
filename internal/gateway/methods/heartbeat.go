@@ -19,12 +19,13 @@ import (
 	"github.com/nextlevelbuilder/goclaw/pkg/protocol"
 )
 
-// HeartbeatMethods handles heartbeat.get/set/toggle/test/logs/checklist RPC methods.
+// HeartbeatMethods handles heartbeat.get/set/toggle/test/logs/checklist/permissions RPC methods.
 type HeartbeatMethods struct {
 	hbStore       store.HeartbeatStore
 	agentStore    store.AgentStore
 	agentRouter   *agent.Router // cache-aware lookup for resolveAgentUUIDCached hot path
 	providerStore store.ProviderStore
+	permStore     store.ConfigPermissionStore
 	eventBus      bus.EventPublisher
 	wakeFn        func(uuid.UUID) // triggers immediate heartbeat run
 }
@@ -49,6 +50,11 @@ func (m *HeartbeatMethods) SetProviderStore(ps store.ProviderStore) {
 	m.providerStore = ps
 }
 
+// SetPermissionStore sets the config permission store for heartbeat permission management.
+func (m *HeartbeatMethods) SetPermissionStore(ps store.ConfigPermissionStore) {
+	m.permStore = ps
+}
+
 // SetWakeFn sets the function called when "heartbeat.test" triggers an immediate run.
 func (m *HeartbeatMethods) SetWakeFn(fn func(uuid.UUID)) {
 	m.wakeFn = fn
@@ -63,6 +69,9 @@ func (m *HeartbeatMethods) Register(router *gateway.MethodRouter) {
 	router.Register(protocol.MethodHeartbeatChecklistGet, m.handleChecklistGet)
 	router.Register(protocol.MethodHeartbeatChecklistSet, m.handleChecklistSet)
 	router.Register(protocol.MethodHeartbeatTargets, m.handleTargets)
+	router.Register(protocol.MethodHeartbeatPermissionsList, m.handlePermissionsList)
+	router.Register(protocol.MethodHeartbeatPermissionsGrant, m.handlePermissionsGrant)
+	router.Register(protocol.MethodHeartbeatPermissionsRevoke, m.handlePermissionsRevoke)
 }
 
 func (m *HeartbeatMethods) handleGet(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
@@ -473,4 +482,126 @@ func (m *HeartbeatMethods) emitCacheInvalidate(agentID string) {
 			Key:  agentID,
 		},
 	})
+}
+
+func (m *HeartbeatMethods) handlePermissionsList(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
+	locale := store.LocaleFromContext(ctx)
+	var params struct {
+		AgentID string `json:"agentId"`
+	}
+	if req.Params != nil {
+		json.Unmarshal(req.Params, &params)
+	}
+	if params.AgentID == "" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, i18n.T(locale, i18n.MsgRequired, "agentId")))
+		return
+	}
+	agentUUID, err := uuid.Parse(params.AgentID)
+	if err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, "invalid agentId"))
+		return
+	}
+	if m.permStore == nil {
+		client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"permissions": []any{}}))
+		return
+	}
+	perms, err := m.permStore.List(ctx, agentUUID, "heartbeat")
+	if err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.list", err)))
+		return
+	}
+	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"permissions": perms}))
+}
+
+func (m *HeartbeatMethods) handlePermissionsGrant(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
+	locale := store.LocaleFromContext(ctx)
+	var params struct {
+		AgentID    string `json:"agentId"`
+		UserID     string `json:"userId"`
+		Scope      string `json:"scope"`
+		Permission string `json:"permission"`
+	}
+	if req.Params != nil {
+		json.Unmarshal(req.Params, &params)
+	}
+	if params.AgentID == "" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, i18n.T(locale, i18n.MsgRequired, "agentId")))
+		return
+	}
+	if params.UserID == "" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, i18n.T(locale, i18n.MsgRequired, "userId")))
+		return
+	}
+	agentUUID, err := uuid.Parse(params.AgentID)
+	if err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, "invalid agentId"))
+		return
+	}
+	if m.permStore == nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, "permission store not configured"))
+		return
+	}
+	scope := params.Scope
+	if scope == "" {
+		scope = "*"
+	}
+	perm := params.Permission
+	if perm == "" {
+		perm = "allow"
+	}
+	grantedBy := client.UserID()
+	if err := m.permStore.Grant(ctx, &store.ConfigPermission{
+		AgentID:    agentUUID,
+		Scope:      scope,
+		ConfigType: "heartbeat",
+		UserID:     params.UserID,
+		Permission: perm,
+		GrantedBy:  &grantedBy,
+	}); err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.grant", err)))
+		return
+	}
+	m.permStore.InvalidateCache()
+	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"ok": true}))
+	emitAudit(m.eventBus, client, "heartbeat.permissions.grant", "heartbeat", params.AgentID)
+}
+
+func (m *HeartbeatMethods) handlePermissionsRevoke(ctx context.Context, client *gateway.Client, req *protocol.RequestFrame) {
+	locale := store.LocaleFromContext(ctx)
+	var params struct {
+		AgentID string `json:"agentId"`
+		UserID  string `json:"userId"`
+		Scope   string `json:"scope"`
+	}
+	if req.Params != nil {
+		json.Unmarshal(req.Params, &params)
+	}
+	if params.AgentID == "" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, i18n.T(locale, i18n.MsgRequired, "agentId")))
+		return
+	}
+	if params.UserID == "" {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, i18n.T(locale, i18n.MsgRequired, "userId")))
+		return
+	}
+	agentUUID, err := uuid.Parse(params.AgentID)
+	if err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInvalidRequest, "invalid agentId"))
+		return
+	}
+	if m.permStore == nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, "permission store not configured"))
+		return
+	}
+	scope := params.Scope
+	if scope == "" {
+		scope = "*"
+	}
+	if err := m.permStore.Revoke(ctx, agentUUID, scope, "heartbeat", params.UserID); err != nil {
+		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.revoke", err)))
+		return
+	}
+	m.permStore.InvalidateCache()
+	client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"ok": true}))
+	emitAudit(m.eventBus, client, "heartbeat.permissions.revoke", "heartbeat", params.AgentID)
 }

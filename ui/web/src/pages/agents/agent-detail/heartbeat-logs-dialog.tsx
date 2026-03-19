@@ -98,8 +98,8 @@ export function HeartbeatLogsDialog({
               {logs.map((log) => (
                 <div key={log.id} className="rounded-md border p-3 text-sm space-y-1">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground" title={formatDate(log.ranAt)}>
-                      {formatRelativeTime(log.ranAt)}
+                    <span className="text-xs text-muted-foreground" title={log.ranAt ? formatDate(log.ranAt) : ""}>
+                      {log.ranAt ? formatRelativeTime(log.ranAt) : "—"}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {(log.inputTokens != null || log.outputTokens != null) && (

@@ -36,6 +36,17 @@ export interface DeliveryTarget {
   kind: string; // "dm" | "group"
 }
 
+export interface HeartbeatPermission {
+  id: string;
+  agentId: string;
+  scope: string;
+  configType: string;
+  userId: string;
+  permission: string; // "allow" | "deny"
+  grantedBy?: string;
+  createdAt: string;
+}
+
 export interface HeartbeatLog {
   id: string;
   status: string;
@@ -203,6 +214,30 @@ export function useAgentHeartbeat(agentId: string) {
     [ws, agentId],
   );
 
+  const fetchPermissions = useCallback(async (): Promise<HeartbeatPermission[]> => {
+    if (!agentId || !ws.isConnected) return [];
+    const res = await ws.call<{ permissions: HeartbeatPermission[] }>(
+      Methods.HEARTBEAT_PERMISSIONS_LIST, { agentId },
+    );
+    return res.permissions ?? [];
+  }, [ws, agentId]);
+
+  const grantPermission = useCallback(
+    async (userId: string, permission: string, scope = "*") => {
+      if (!agentId) return;
+      await ws.call(Methods.HEARTBEAT_PERMISSIONS_GRANT, { agentId, userId, permission, scope });
+    },
+    [ws, agentId],
+  );
+
+  const revokePermission = useCallback(
+    async (userId: string, scope = "*") => {
+      if (!agentId) return;
+      await ws.call(Methods.HEARTBEAT_PERMISSIONS_REVOKE, { agentId, userId, scope });
+    },
+    [ws, agentId],
+  );
+
   const fetchTargets = useCallback(async (): Promise<DeliveryTarget[]> => {
     if (!agentId || !ws.isConnected) return [];
     const res = await ws.call<{ targets: DeliveryTarget[] }>(
@@ -223,6 +258,9 @@ export function useAgentHeartbeat(agentId: string) {
     getChecklist,
     setChecklist,
     fetchTargets,
+    fetchPermissions,
+    grantPermission,
+    revokePermission,
     refresh,
   };
 }

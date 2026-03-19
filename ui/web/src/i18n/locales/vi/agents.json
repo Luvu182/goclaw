@@ -947,7 +947,12 @@
     "logsTitle": "Nhật ký Heartbeat",
     "refresh": "Làm mới",
     "noLogs": "Chưa có nhật ký heartbeat.",
-    "logsPagination": "{{from}}–{{to}} / {{total}}"
+    "logsPagination": "{{from}}–{{to}} / {{total}}",
+    "permissions": "Phân quyền",
+    "permissionsHint": "Mặc định ai cũng có thể chỉnh heartbeat. Thêm deny để chặn user cụ thể, hoặc allow để ghi đè.",
+    "permDeny": "Chặn",
+    "permAllow": "Cho phép",
+    "permUserPlaceholder": "User / Sender ID"
   },
   "permissions": {
     "title": "Quyền hạn",

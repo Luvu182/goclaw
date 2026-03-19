@@ -159,6 +159,9 @@ export function AgentDetailPage({ agentId, onBack }: AgentDetailPageProps) {
             getChecklist={hb.getChecklist}
             setChecklist={hb.setChecklist}
             fetchTargets={hb.fetchTargets}
+            fetchPermissions={hb.fetchPermissions}
+            grantPermission={hb.grantPermission}
+            revokePermission={hb.revokePermission}
             refresh={hb.refresh}
             agentProvider={agent?.provider}
             agentModel={agent?.model}

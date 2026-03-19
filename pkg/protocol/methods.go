@@ -93,7 +93,10 @@ const (
 	MethodHeartbeatLogs         = "heartbeat.logs"
 	MethodHeartbeatChecklistGet = "heartbeat.checklist.get"
 	MethodHeartbeatChecklistSet = "heartbeat.checklist.set"
-	MethodHeartbeatTargets      = "heartbeat.targets"
+	MethodHeartbeatTargets          = "heartbeat.targets"
+	MethodHeartbeatPermissionsList  = "heartbeat.permissions.list"
+	MethodHeartbeatPermissionsGrant = "heartbeat.permissions.grant"
+	MethodHeartbeatPermissionsRevoke = "heartbeat.permissions.revoke"
 )
 
 // Config permissions

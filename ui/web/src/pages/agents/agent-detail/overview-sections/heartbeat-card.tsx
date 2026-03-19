@@ -17,7 +17,7 @@ interface HeartbeatCardProps {
 
 export function HeartbeatCard({ heartbeat }: HeartbeatCardProps) {
   const { t } = useTranslation("agents");
-  const { config, loading, saving, toggle, update, test, getChecklist, setChecklist, fetchTargets, refresh, fetchLogs } = heartbeat;
+  const { config, loading, saving, toggle, update, test, getChecklist, setChecklist, fetchTargets, fetchPermissions, grantPermission, revokePermission, refresh, fetchLogs } = heartbeat;
   const [configOpen, setConfigOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
 
@@ -53,7 +53,9 @@ export function HeartbeatCard({ heartbeat }: HeartbeatCardProps) {
             <HeartbeatConfigDialog
               open={configOpen} onOpenChange={setConfigOpen}
               config={config} saving={saving} update={update} test={test}
-              getChecklist={getChecklist} setChecklist={setChecklist} fetchTargets={fetchTargets} refresh={refresh}
+              getChecklist={getChecklist} setChecklist={setChecklist} fetchTargets={fetchTargets}
+              fetchPermissions={fetchPermissions} grantPermission={grantPermission} revokePermission={revokePermission}
+              refresh={refresh}
             />
           </Suspense>
         )}
@@ -136,7 +138,9 @@ export function HeartbeatCard({ heartbeat }: HeartbeatCardProps) {
           <HeartbeatConfigDialog
             open={configOpen} onOpenChange={setConfigOpen}
             config={config} saving={saving} update={update} test={test}
-            getChecklist={getChecklist} setChecklist={setChecklist} fetchTargets={fetchTargets} refresh={refresh}
+            getChecklist={getChecklist} setChecklist={setChecklist} fetchTargets={fetchTargets}
+            fetchPermissions={fetchPermissions} grantPermission={grantPermission} revokePermission={revokePermission}
+            refresh={refresh}
           />
         </Suspense>
       )}
