@@ -33,9 +33,12 @@ func buildSessionFilter(ctx context.Context, opts store.SessionListOpts, tableAl
 	idx := 1
 
 	if opts.AgentID != "" {
-		conditions = append(conditions, fmt.Sprintf("%ssession_key LIKE $%d", prefix, idx))
-		args = append(args, "agent:"+opts.AgentID+":%")
-		idx++
+		agentUUID, parseErr := uuid.Parse(opts.AgentID)
+		if parseErr == nil {
+			conditions = append(conditions, fmt.Sprintf("%sagent_id = $%d", prefix, idx))
+			args = append(args, agentUUID)
+			idx++
+		}
 	}
 	if opts.Channel != "" {
 		// Match canonical format: agent:X:{channel}:...
@@ -73,8 +76,12 @@ func (s *PGSessionStore) List(ctx context.Context, agentID string) []store.Sessi
 	idx := 1
 
 	if agentID != "" {
-		conditions = append(conditions, fmt.Sprintf("session_key LIKE $%d", idx))
-		args = append(args, "agent:"+agentID+":%")
+		agentUUID, parseErr := uuid.Parse(agentID)
+		if parseErr != nil {
+			return nil
+		}
+		conditions = append(conditions, fmt.Sprintf("agent_id = $%d", idx))
+		args = append(args, agentUUID)
 		idx++
 	}
 	if !store.IsCrossTenant(ctx) {
@@ -258,20 +265,21 @@ func (s *PGSessionStore) Save(ctx context.Context, key string) error {
 }
 
 func (s *PGSessionStore) LastUsedChannel(ctx context.Context, agentID string) (string, string) {
-	prefix := "agent:" + agentID + ":%"
+	agentUUID, parseErr := uuid.Parse(agentID)
+	if parseErr != nil {
+		return "", ""
+	}
 	tid := tenantIDForInsert(ctx)
 	var sessionKey string
 	err := s.db.QueryRowContext(ctx,
 		`SELECT session_key FROM sessions
-		 WHERE session_key LIKE $1
-		   AND session_key NOT LIKE $2
-		   AND session_key NOT LIKE $3
-		   AND tenant_id = $4
+		 WHERE agent_id = $1
+		   AND session_key NOT LIKE '%:cron:%'
+		   AND session_key NOT LIKE '%:subagent:%'
+		   AND session_key NOT LIKE '%:heartbeat'
+		   AND tenant_id = $2
 		 ORDER BY updated_at DESC LIMIT 1`,
-		prefix,
-		"agent:"+agentID+":cron:%",
-		"agent:"+agentID+":subagent:%",
-		tid,
+		agentUUID, tid,
 	).Scan(&sessionKey)
 	if err != nil {
 		return "", ""

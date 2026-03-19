@@ -128,6 +128,9 @@ type SessionListingStore interface {
 	ListPaged(ctx context.Context, opts SessionListOpts) SessionListResult
 	ListPagedRich(ctx context.Context, opts SessionListOpts) SessionListRichResult
 	LastUsedChannel(ctx context.Context, agentID string) (channel, chatID string)
+	// GetSessionAgentID returns the agent UUID that owns the given session key.
+	// Returns uuid.Nil if the session does not exist.
+	GetSessionAgentID(ctx context.Context, key string) uuid.UUID
 }
 
 // SessionStore composes all session sub-interfaces for backward compatibility.

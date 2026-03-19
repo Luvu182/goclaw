@@ -305,3 +305,22 @@ func (s *PGSessionStore) UpdateMetadata(ctx context.Context, key, model, provide
 		}
 	}
 }
+
+func (s *PGSessionStore) GetSessionAgentID(ctx context.Context, key string) uuid.UUID {
+	// Check in-memory cache first.
+	s.mu.RLock()
+	if data, ok := s.cache[sessionCacheKey(ctx, key)]; ok {
+		id := data.AgentUUID
+		s.mu.RUnlock()
+		return id
+	}
+	s.mu.RUnlock()
+
+	// Fall back to DB.
+	var agentID *uuid.UUID
+	err := s.db.QueryRowContext(ctx, "SELECT agent_id FROM sessions WHERE session_key = $1", key).Scan(&agentID)
+	if err != nil || agentID == nil {
+		return uuid.Nil
+	}
+	return *agentID
+}
