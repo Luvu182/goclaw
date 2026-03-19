@@ -13,9 +13,11 @@ const HeartbeatConfigDialog = lazy(() =>
 
 interface HeartbeatCardProps {
   heartbeat: UseAgentHeartbeatReturn;
+  agentProvider?: string;
+  agentModel?: string;
 }
 
-export function HeartbeatCard({ heartbeat }: HeartbeatCardProps) {
+export function HeartbeatCard({ heartbeat, agentProvider, agentModel }: HeartbeatCardProps) {
   const { t } = useTranslation("agents");
   const { config, loading, saving, toggle, update, test, getChecklist, setChecklist, fetchTargets, fetchPermissions, grantPermission, revokePermission, refresh, fetchLogs } = heartbeat;
   const [configOpen, setConfigOpen] = useState(false);
@@ -56,6 +58,7 @@ export function HeartbeatCard({ heartbeat }: HeartbeatCardProps) {
               getChecklist={getChecklist} setChecklist={setChecklist} fetchTargets={fetchTargets}
               fetchPermissions={fetchPermissions} grantPermission={grantPermission} revokePermission={revokePermission}
               refresh={refresh}
+              agentProvider={agentProvider} agentModel={agentModel}
             />
           </Suspense>
         )}

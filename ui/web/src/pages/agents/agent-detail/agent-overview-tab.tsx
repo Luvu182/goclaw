@@ -159,7 +159,7 @@ export function AgentOverviewTab({ agent, onUpdate, heartbeat, onManageCodexPool
         onChange={setMem}
       />
 
-      <HeartbeatCard heartbeat={heartbeat} />
+      <HeartbeatCard heartbeat={heartbeat} agentProvider={agent.provider} agentModel={agent.model} />
 
       <SkillsSection agentId={agent.id} />
       <PinnedSkillsSection agent={agent} onUpdate={onUpdate} />
