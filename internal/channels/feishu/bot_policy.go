@@ -40,7 +40,8 @@ func (c *Channel) resolveSenderName(ctx context.Context, openID string) string {
 func (c *Channel) fetchSenderName(ctx context.Context, openID string) string {
 	name, err := c.client.GetUser(ctx, openID, "open_id")
 	if err != nil {
-		slog.Debug("feishu fetch sender name failed", "open_id", openID, "error", err)
+		slog.Warn("feishu: fetch sender name failed (check contact:user.base:readonly permission)",
+			"open_id", openID, "error", err)
 		return ""
 	}
 	return name
