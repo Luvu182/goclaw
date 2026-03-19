@@ -505,7 +505,7 @@ func (m *HeartbeatMethods) handlePermissionsList(ctx context.Context, client *ga
 		client.SendResponse(protocol.NewOKResponse(req.ID, map[string]any{"permissions": []any{}}))
 		return
 	}
-	perms, err := m.permStore.List(ctx, agentUUID, "heartbeat")
+	perms, err := m.permStore.List(ctx, agentUUID, "heartbeat", "")
 	if err != nil {
 		client.SendResponse(protocol.NewErrorResponse(req.ID, protocol.ErrInternal, heartbeatInternalErr("permissions.list", err)))
 		return
