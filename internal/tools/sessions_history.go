@@ -80,6 +80,10 @@ func (t *SessionsHistoryTool) Execute(ctx context.Context, args map[string]any) 
 		return ErrorResult("access denied: session belongs to a different agent")
 	}
 
+	// Include compaction summary if available (provides context from older
+	// messages that were removed during auto-summarization).
+	summary := t.sessions.GetSummary(ctx, sessionKey)
+
 	history := t.sessions.GetHistory(ctx, sessionKey)
 	if history == nil {
 		out, _ := json.Marshal(map[string]any{
@@ -120,11 +124,15 @@ func (t *SessionsHistoryTool) Execute(ctx context.Context, args map[string]any) 
 		entries = entries[len(entries)-limit:]
 	}
 
-	out, _ := json.Marshal(map[string]any{
+	result := map[string]any{
 		"session_key": sessionKey,
 		"messages":    entries,
 		"count":       len(entries),
-	})
+	}
+	if summary != "" {
+		result["summary"] = summary
+	}
+	out, _ := json.Marshal(result)
 
 	// Cap total bytes
 	if len(out) > historyMaxTotalBytes {
