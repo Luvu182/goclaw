@@ -144,7 +144,7 @@ RUN chmod +x /app/docker-entrypoint.sh && \
 # Create data directories.
 # .runtime has split ownership: root owns the dir (so pkg-helper can write apk-packages),
 # while pip/npm subdirs are goclaw-owned (runtime installs by the app process).
-# Symlink .claude → data volume so Claude CLI credentials persist across container recreates.
+# Symlink .claude → data volume so credentials persist and are writable at runtime.
 RUN mkdir -p /app/workspace /app/data/.runtime/pip /app/data/.runtime/npm-global/lib \
         /app/data/.runtime/pip-cache /app/data/.claude /app/data/acp-workspaces /app/skills /app/tsnet-state /app/.goclaw \
     && ln -s /app/data/.claude /app/.claude \

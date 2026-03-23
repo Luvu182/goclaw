@@ -79,6 +79,7 @@ services:
     volumes:
       - goclaw-data:/app/data
       - goclaw-workspace:/app/workspace
+      - ${HOME}/.claude:/app/.claude-host:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     security_opt:
