@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -111,6 +112,7 @@ func (tb *ToolBridge) createTerminal(req CreateTerminalRequest) (*CreateTerminal
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, req.Command, req.Args...)
 	cmd.Dir = cwd
+	cmd.Env = filterACPEnv(os.Environ())
 
 	output := &cappedBuffer{max: tb.maxOutputBytes}
 	cmd.Stdout = output

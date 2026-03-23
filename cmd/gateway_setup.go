@@ -151,6 +151,9 @@ func setupToolRegistry(
 		slog.Info("tts enabled", "provider", ttsMgr.PrimaryProvider(), "auto", string(ttsMgr.AutoMode()))
 	}
 
+	// Claude Code remote delegation tool (SSH → claude -p)
+	toolsReg.Register(tools.NewClaudeCodeTool())
+
 	// Tool rate limiting (per session, sliding window)
 	if cfg.Tools.RateLimitPerHour > 0 {
 		toolsReg.SetRateLimiter(tools.NewToolRateLimiter(cfg.Tools.RateLimitPerHour))

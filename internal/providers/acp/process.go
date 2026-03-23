@@ -149,12 +149,12 @@ func (pp *ProcessPool) spawn(ctx context.Context, sessionKey string) (*ACPProces
 	// Notification handler: route session/update to active prompt callback
 	notifyHandler := func(method string, params json.RawMessage) {
 		if method == "session/update" {
-			var update SessionUpdate
-			if err := json.Unmarshal(params, &update); err != nil {
+			var notif SessionUpdateNotification
+			if err := json.Unmarshal(params, &notif); err != nil {
 				slog.Warn("acp: failed to parse session/update", "error", err)
 				return
 			}
-			proc.dispatchUpdate(update)
+			proc.dispatchUpdate(notif.Update)
 		}
 	}
 
@@ -176,7 +176,7 @@ func (pp *ProcessPool) spawn(ctx context.Context, sessionKey string) (*ACPProces
 		cancel()
 		return nil, err
 	}
-	if err := proc.NewSession(ctx); err != nil {
+	if err := proc.NewSession(ctx, pp.workDir); err != nil {
 		cancel()
 		return nil, err
 	}

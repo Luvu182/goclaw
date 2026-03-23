@@ -122,12 +122,8 @@ func (p *ACPProvider) Chat(ctx context.Context, req ChatRequest) (*ChatResponse,
 	// Collect all text from session/update notifications
 	var buf strings.Builder
 	promptResp, err := proc.Prompt(ctx, content, func(update acp.SessionUpdate) {
-		if update.Message != nil {
-			for _, block := range update.Message.Content {
-				if block.Type == "text" {
-					buf.WriteString(block.Text)
-				}
-			}
+		if update.SessionUpdate == "agent_message_chunk" && update.Content != nil && update.Content.Type == "text" {
+			buf.WriteString(update.Content.Text)
 		}
 	})
 	if err != nil {
@@ -173,16 +169,12 @@ func (p *ACPProvider) ChatStream(ctx context.Context, req ChatRequest, onChunk f
 
 	var buf strings.Builder
 	promptResp, err := proc.Prompt(ctx, content, func(update acp.SessionUpdate) {
-		if update.Message != nil {
-			for _, block := range update.Message.Content {
-				if block.Type == "text" {
-					onChunk(StreamChunk{Content: block.Text})
-					buf.WriteString(block.Text)
-				}
-			}
+		if update.SessionUpdate == "agent_message_chunk" && update.Content != nil && update.Content.Type == "text" {
+			onChunk(StreamChunk{Content: update.Content.Text})
+			buf.WriteString(update.Content.Text)
 		}
-		if update.ToolCall != nil && update.ToolCall.Status == "running" {
-			slog.Debug("acp: tool call", "name", update.ToolCall.Name)
+		if update.SessionUpdate == "tool_call" {
+			slog.Debug("acp: tool call", "name", update.Name)
 		}
 	})
 	if err != nil {

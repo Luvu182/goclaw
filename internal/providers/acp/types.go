@@ -1,5 +1,7 @@
 package acp
 
+import "encoding/json"
+
 // ACP protocol types — client-side subset for GoClaw as ACP client.
 // Covers: initialize, session lifecycle, content blocks, and agent→client requests.
 
@@ -7,8 +9,9 @@ package acp
 
 // InitializeRequest starts the ACP handshake.
 type InitializeRequest struct {
-	ClientInfo   ClientInfo `json:"clientInfo"`
-	Capabilities ClientCaps `json:"capabilities"`
+	ProtocolVersion  int          `json:"protocolVersion"`
+	ClientInfo       *ClientInfo  `json:"clientInfo,omitempty"`
+	ClientCapabilities ClientCaps `json:"clientCapabilities"`
 }
 
 // ClientInfo identifies the ACP client.
@@ -19,19 +22,14 @@ type ClientInfo struct {
 
 // ClientCaps declares what the client can handle (fs, terminal, etc.).
 type ClientCaps struct {
-	Fs       *FsCaps       `json:"fs,omitempty"`
-	Terminal *TerminalCaps `json:"terminal,omitempty"`
+	Fs       *FsCaps `json:"fs,omitempty"`
+	Terminal bool    `json:"terminal"`
 }
 
 // FsCaps declares filesystem capabilities.
 type FsCaps struct {
 	ReadTextFile  bool `json:"readTextFile"`
 	WriteTextFile bool `json:"writeTextFile"`
-}
-
-// TerminalCaps declares terminal capabilities.
-type TerminalCaps struct {
-	Enabled bool `json:"enabled"`
 }
 
 // InitializeResponse carries the agent's identity and capabilities.
@@ -66,7 +64,10 @@ type SessionCaps struct{}
 // --- Session Methods ---
 
 // NewSessionRequest creates a new ACP session.
-type NewSessionRequest struct{}
+type NewSessionRequest struct {
+	Cwd        string        `json:"cwd"`
+	McpServers []interface{} `json:"mcpServers"`
+}
 
 // NewSessionResponse carries the new session ID.
 type NewSessionResponse struct {
@@ -76,7 +77,7 @@ type NewSessionResponse struct {
 // PromptRequest sends user content to the agent.
 type PromptRequest struct {
 	SessionID string         `json:"sessionId"`
-	Content   []ContentBlock `json:"content"`
+	Prompt    []ContentBlock `json:"prompt"`
 }
 
 // PromptResponse is the final response after the agent completes.
@@ -101,26 +102,22 @@ type ContentBlock struct {
 
 // --- Agent → Client Notifications ---
 
+// SessionUpdateNotification is the top-level notification payload for session/update.
+type SessionUpdateNotification struct {
+	SessionID string        `json:"sessionId"`
+	Update    SessionUpdate `json:"update"`
+}
+
 // SessionUpdate carries incremental updates during prompt execution.
 type SessionUpdate struct {
-	Kind       string          `json:"kind"`                 // "message", "toolCall", "plan"
-	StopReason string          `json:"stopReason,omitempty"` // "endTurn", "cancelled"
-	Message    *MessageUpdate  `json:"message,omitempty"`
-	ToolCall   *ToolCallUpdate `json:"toolCall,omitempty"`
-}
-
-// MessageUpdate carries an assistant text delta.
-type MessageUpdate struct {
-	Role    string         `json:"role"`
-	Content []ContentBlock `json:"content"`
-}
-
-// ToolCallUpdate carries tool call progress.
-type ToolCallUpdate struct {
-	ID      string         `json:"id"`
-	Name    string         `json:"name"`
-	Status  string         `json:"status"` // "running", "completed"
-	Content []ContentBlock `json:"content,omitempty"`
+	SessionUpdate string        `json:"sessionUpdate"` // "agent_message_chunk", "tool_call", etc.
+	Content       *ContentBlock `json:"content,omitempty"`
+	MessageID     string        `json:"messageId,omitempty"`
+	// Tool call fields
+	ID         string         `json:"id,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Status     string         `json:"status,omitempty"`
+	ToolResult []ContentBlock `json:"toolResult,omitempty"`
 }
 
 // --- Agent → Client Requests (fs/terminal/permission) ---
@@ -180,10 +177,21 @@ type KillTerminalRequest struct {
 type KillTerminalResponse struct{}
 
 type RequestPermissionRequest struct {
-	ToolName    string `json:"toolName"`
-	Description string `json:"description"`
+	SessionID string             `json:"sessionId"`
+	ToolCall  json.RawMessage    `json:"toolCall"`
+	Options   []PermissionOption `json:"options"`
+}
+
+type PermissionOption struct {
+	ID   string `json:"id"`
+	Kind string `json:"kind"` // "allow_once", "allow_always", "deny", etc.
 }
 
 type RequestPermissionResponse struct {
-	Outcome string `json:"outcome"` // "approved", "denied", "cancelled"
+	Outcome PermissionOutcome `json:"outcome"`
+}
+
+type PermissionOutcome struct {
+	Outcome        string `json:"outcome"` // "selected" or "cancelled"
+	SelectedOption string `json:"selectedOption,omitempty"`
 }

@@ -10,3 +10,5 @@ services:
       - "0"
     volumes:
       - /var/telegram-bot/data:/var/telegram-bot/data:ro
+      - /var/goclaw/data/claude-credentials.json:/app/.claude/.credentials.json:ro
+      - /root/.ssh:/app/.ssh:ro

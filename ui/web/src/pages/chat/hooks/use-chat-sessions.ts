@@ -3,6 +3,7 @@ import { useWs } from "@/hooks/use-ws";
 import { useWsEvent } from "@/hooks/use-ws-event";
 import { Methods, Events } from "@/api/protocol";
 import type { SessionInfo } from "@/types/session";
+import { uniqueId } from "@/lib/utils";
 import { useAuthStore } from "@/stores/use-auth-store";
 import { toast } from "@/stores/use-toast-store";
 import i18next from "i18next";

@@ -107,6 +107,9 @@ func builtinToolSeedData() []store.BuiltinToolDef {
 		{Name: "team_tasks", DisplayName: "Team Tasks", Description: "View, create, update, and complete tasks on the team task board", Category: "teams", Enabled: true,
 			Requires: []string{"managed_mode", "teams"},
 		},
+
+		// delegation
+		{Name: "claude_code", DisplayName: "Claude Code (SSH)", Description: "Delegate complex tasks to Claude Code running on a remote VPS via SSH", Category: "delegation", Enabled: true},
 	}
 
 	// Lite edition: remove skill management tools — not available on desktop.

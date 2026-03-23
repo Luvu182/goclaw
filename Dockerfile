@@ -84,7 +84,7 @@ COPY docker/requirements-base.txt docker/requirements-skills.txt /tmp/
 # ENABLE_FULL_SKILLS=true pre-installs all skill deps (larger image, no on-demand install needed).
 # Otherwise, skill packages are installed on-demand via the admin UI.
 RUN set -eux; \
-    apk add --no-cache ca-certificates wget su-exec; \
+    apk add --no-cache ca-certificates wget su-exec openssh-client; \
     if [ "$ENABLE_SANDBOX" = "true" ]; then \
         apk add --no-cache docker-cli; \
     fi; \
@@ -102,6 +102,8 @@ RUN set -eux; \
         fi; \
         if [ "$ENABLE_NODE" = "true" ] || [ "$ENABLE_CLAUDE_CLI" = "true" ]; then \
             apk add --no-cache nodejs npm; \
+            npm install -g --cache /tmp/npm-cache @anthropic-ai/claude-code @zed-industries/claude-agent-acp; \
+            rm -rf /tmp/npm-cache; \
         fi; \
     fi; \
     if [ "$ENABLE_CLAUDE_CLI" = "true" ]; then \
@@ -144,7 +146,7 @@ RUN chmod +x /app/docker-entrypoint.sh && \
 # while pip/npm subdirs are goclaw-owned (runtime installs by the app process).
 # Symlink .claude → data volume so Claude CLI credentials persist across container recreates.
 RUN mkdir -p /app/workspace /app/data/.runtime/pip /app/data/.runtime/npm-global/lib \
-        /app/data/.runtime/pip-cache /app/data/.claude /app/skills /app/tsnet-state /app/.goclaw \
+        /app/data/.runtime/pip-cache /app/data/.claude /app/data/acp-workspaces /app/skills /app/tsnet-state /app/.goclaw \
     && ln -s /app/data/.claude /app/.claude \
     && touch /app/data/.runtime/apk-packages \
     && chown -R goclaw:goclaw /app/workspace /app/skills /app/tsnet-state /app/.goclaw \

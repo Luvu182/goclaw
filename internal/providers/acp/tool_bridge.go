@@ -58,7 +58,7 @@ func NewToolBridge(workspace string, opts ...ToolBridgeOption) *ToolBridge {
 // Implements the RequestHandler signature for Conn.
 func (tb *ToolBridge) Handle(ctx context.Context, method string, params json.RawMessage) (any, error) {
 	switch method {
-	case "fs/readTextFile":
+	case "fs/read_text_file":
 		if tb.permMode == "deny-all" {
 			return nil, fmt.Errorf("read denied by permission mode: %s", tb.permMode)
 		}
@@ -67,7 +67,7 @@ func (tb *ToolBridge) Handle(ctx context.Context, method string, params json.Raw
 			return nil, fmt.Errorf("invalid params: %w", err)
 		}
 		return tb.readFile(req)
-	case "fs/writeTextFile":
+	case "fs/write_text_file":
 		if tb.permMode == "deny-all" || tb.permMode == "approve-reads" {
 			return nil, fmt.Errorf("write denied by permission mode: %s", tb.permMode)
 		}
@@ -97,7 +97,7 @@ func (tb *ToolBridge) Handle(ctx context.Context, method string, params json.Raw
 			return nil, fmt.Errorf("invalid params: %w", err)
 		}
 		return tb.releaseTerminal(req)
-	case "terminal/waitForExit":
+	case "terminal/wait_for_exit":
 		var req WaitForTerminalExitRequest
 		if err := json.Unmarshal(params, &req); err != nil {
 			return nil, fmt.Errorf("invalid params: %w", err)
@@ -112,13 +112,14 @@ func (tb *ToolBridge) Handle(ctx context.Context, method string, params json.Raw
 			return nil, fmt.Errorf("invalid params: %w", err)
 		}
 		return tb.killTerminal(req)
-	case "permission/request":
+	case "session/request_permission":
 		var req RequestPermissionRequest
 		if err := json.Unmarshal(params, &req); err != nil {
 			return nil, fmt.Errorf("invalid params: %w", err)
 		}
 		return tb.handlePermission(req)
 	default:
+		slog.Warn("acp: unknown tool bridge method", "method", method)
 		return nil, fmt.Errorf("unknown method: %s", method)
 	}
 }
@@ -153,20 +154,26 @@ func (tb *ToolBridge) writeFile(req WriteTextFileRequest) (*WriteTextFileRespons
 
 // handlePermission responds to permission requests based on configured mode.
 func (tb *ToolBridge) handlePermission(req RequestPermissionRequest) (*RequestPermissionResponse, error) {
+	// Find the best option to select based on permission mode
 	switch tb.permMode {
 	case "deny-all":
-		return &RequestPermissionResponse{Outcome: "denied"}, nil
-	case "approve-reads":
-		// Approve read-only tools, deny write/exec tools
-		lower := strings.ToLower(req.ToolName)
-		if strings.Contains(lower, "read") || strings.Contains(lower, "glob") ||
-			strings.Contains(lower, "grep") || strings.Contains(lower, "search") ||
-			strings.Contains(lower, "list") || strings.Contains(lower, "view") {
-			return &RequestPermissionResponse{Outcome: "approved"}, nil
+		return &RequestPermissionResponse{Outcome: PermissionOutcome{Outcome: "cancelled"}}, nil
+	default:
+		// "approve-all" or "approve-reads" → select "allow_once" option if available
+		for _, opt := range req.Options {
+			if opt.Kind == "allow_once" || opt.Kind == "allow_always" {
+				return &RequestPermissionResponse{
+					Outcome: PermissionOutcome{Outcome: "selected", SelectedOption: opt.ID},
+				}, nil
+			}
 		}
-		return &RequestPermissionResponse{Outcome: "denied"}, nil
-	default: // "approve-all" or unknown → approve
-		return &RequestPermissionResponse{Outcome: "approved"}, nil
+		// No allow option found — select first option
+		if len(req.Options) > 0 {
+			return &RequestPermissionResponse{
+				Outcome: PermissionOutcome{Outcome: "selected", SelectedOption: req.Options[0].ID},
+			}, nil
+		}
+		return &RequestPermissionResponse{Outcome: PermissionOutcome{Outcome: "cancelled"}}, nil
 	}
 }
 

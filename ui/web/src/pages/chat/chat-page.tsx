@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router";
 import { Eye, PanelLeftOpen } from "lucide-react";
 import { useAuthStore } from "@/stores/use-auth-store";
 import { useIsMobile } from "@/hooks/use-media-query";
-import { cn } from "@/lib/utils";
+import { cn, uniqueId } from "@/lib/utils";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatThread } from "./chat-thread";
 import { ChatInput, type AttachedFile } from "@/components/chat/chat-input";
@@ -121,9 +121,7 @@ export function ChatPage() {
   const handleAgentChange = useCallback(
     (newAgentId: string) => {
       setAgentIdFallback(newAgentId);
-      if (sessionKey) {
-        navigate("/chat");
-      }
+      navigate(`/chat/${encodeURIComponent(`agent:${newAgentId}:ws:direct:${uniqueId()}`)}`)
     },
     [navigate, sessionKey],
   );
