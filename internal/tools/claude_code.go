@@ -18,10 +18,12 @@ func NewClaudeCodeTool() *ClaudeCodeTool { return &ClaudeCodeTool{} }
 func (t *ClaudeCodeTool) Name() string { return "claude_code" }
 
 func (t *ClaudeCodeTool) Description() string {
-	return `Delegate a complex task to Claude Code running on a remote VPS via SSH.
-Claude Code is a full AI coding agent with terminal access, file editing, and multi-step execution.
-Use this for tasks that require working directly on a remote server: deploying apps, configuring services, debugging servers, writing code, etc.
-Claude Code will autonomously complete the entire task and return the result.
+	return `Delegate a task to Claude Code, an AI coding agent already running on a remote server.
+The prompt you provide is sent directly to Claude Code which already has full local access to that server's filesystem, terminal, and tools.
+Do NOT tell Claude Code to "SSH into" or "connect to" the server — it is already there. Just describe the task.
+Good prompt: "List projects in /var and identify their tech stacks"
+Bad prompt: "SSH into the server and list projects in /var"
+Claude Code will autonomously execute commands, read/edit files, and complete the task, then return the result.
 To continue a previous session, pass the session_id from the previous result.`
 }
 
