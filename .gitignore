@@ -91,3 +91,7 @@ compose.d/*
 
 # Browser cookies (sensitive)
 .cookies/
+
+# Local data (credentials, workspaces)
+data/
+*.zip
