@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/nextlevelbuilder/goclaw/internal/store"
 )
@@ -73,6 +74,8 @@ func (s *PGMemoryStore) GetDocumentDetail(ctx context.Context, agentID, userID, 
 		if err != nil {
 			return nil, err
 		}
+		// Use d.tenant_id explicitly to avoid ambiguity with memory_chunks.tenant_id
+		tc = strings.Replace(tc, "tenant_id", "d.tenant_id", 1)
 		q = `SELECT d.path, d.content, d.hash, d.user_id, d.created_at, d.updated_at,
 				COUNT(c.id) AS chunk_count,
 				COUNT(c.embedding) AS embedded_count
@@ -86,6 +89,7 @@ func (s *PGMemoryStore) GetDocumentDetail(ctx context.Context, agentID, userID, 
 		if err != nil {
 			return nil, err
 		}
+		tc = strings.Replace(tc, "tenant_id", "d.tenant_id", 1)
 		q = `SELECT d.path, d.content, d.hash, d.user_id, d.created_at, d.updated_at,
 				COUNT(c.id) AS chunk_count,
 				COUNT(c.embedding) AS embedded_count
@@ -118,6 +122,7 @@ func (s *PGMemoryStore) ListChunks(ctx context.Context, agentID, userID, path st
 		if err != nil {
 			return nil, err
 		}
+		tc = strings.Replace(tc, "tenant_id", "d.tenant_id", 1)
 		q = `SELECT c.id, c.start_line, c.end_line,
 				c.text AS text_preview,
 				(c.embedding IS NOT NULL) AS has_embedding
@@ -131,6 +136,7 @@ func (s *PGMemoryStore) ListChunks(ctx context.Context, agentID, userID, path st
 		if err != nil {
 			return nil, err
 		}
+		tc = strings.Replace(tc, "tenant_id", "d.tenant_id", 1)
 		q = `SELECT c.id, c.start_line, c.end_line,
 				c.text AS text_preview,
 				(c.embedding IS NOT NULL) AS has_embedding
