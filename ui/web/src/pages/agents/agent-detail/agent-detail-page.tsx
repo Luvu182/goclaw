@@ -12,6 +12,8 @@ import { AgentInstancesTab } from "./agent-instances-tab";
 import { AgentPermissionsTab } from "./agent-permissions-tab";
 import { AgentEvolutionTab } from "./evolution-tab/agent-evolution-tab";
 import { SummoningModal } from "../summoning-modal";
+import { AgentExportDialog } from "../agent-export-dialog";
+import { AgentMergeImportDialog } from "../agent-merge-import-dialog";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { DetailPageSkeleton } from "@/components/shared/loading-skeleton";
 import { agentDisplayName } from "./agent-display-utils";
@@ -34,7 +36,7 @@ export function AgentDetailPage({ agentId, onBack }: AgentDetailPageProps) {
   const navigate = useNavigate();
   const { agent, files, loading, updateAgent, getFile, setFile, regenerateAgent, resummonAgent, refresh } =
     useAgentDetail(agentId);
-  const { deleteAgent: deleteAgentById } = useAgents();
+  const { deleteAgent: deleteAgentById, exportAgent, mergeImport } = useAgents();
   const hb = useAgentHeartbeat(agentId);
   const [summoningOpen, setSummoningOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("agent");
@@ -42,6 +44,8 @@ export function AgentDetailPage({ agentId, onBack }: AgentDetailPageProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [heartbeatOpen, setHeartbeatOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [mergeImportOpen, setMergeImportOpen] = useState(false);
 
   const handleResummon = async () => {
     await resummonAgent();
@@ -69,6 +73,8 @@ export function AgentDetailPage({ agentId, onBack }: AgentDetailPageProps) {
         onAdvanced={() => setAdvancedOpen(true)}
         onHeartbeat={() => setHeartbeatOpen(true)}
         onSystemPrompt={() => setPromptOpen(true)}
+        onExport={() => setExportOpen(true)}
+        onMergeImport={() => setMergeImportOpen(true)}
       />
 
       <div className="p-3 sm:p-4">
@@ -176,6 +182,26 @@ export function AgentDetailPage({ agentId, onBack }: AgentDetailPageProps) {
           onOpenChange={setPromptOpen}
         />
       )}
+
+      <AgentExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        agentId={agentId}
+        agentKey={agent.agent_key}
+        agentName={title}
+        onExport={exportAgent}
+      />
+
+      <AgentMergeImportDialog
+        open={mergeImportOpen}
+        onOpenChange={setMergeImportOpen}
+        agentId={agentId}
+        agentName={title}
+        onMergeImport={async (id, data, include) => {
+          await mergeImport(id, data, include);
+          refresh();
+        }}
+      />
 
       <ConfirmDeleteDialog
         open={deleteOpen}

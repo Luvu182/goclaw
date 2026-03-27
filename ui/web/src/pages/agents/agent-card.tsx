@@ -1,4 +1,4 @@
-import { Bot, Star, RotateCcw, Trash2, Sparkles } from "lucide-react";
+import { Bot, Star, RotateCcw, Trash2, Sparkles, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ interface AgentCardProps {
   onClick: () => void;
   onResummon?: () => void;
   onDelete?: () => void;
+  onExport?: () => void;
 }
 
-export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardProps) {
+export function AgentCard({ agent, onClick, onResummon, onDelete, onExport }: AgentCardProps) {
   const { t } = useTranslation("agents");
   const displayName = agentDisplayName(agent, t("card.unnamedAgent"));
   const selfEvolve = agent.agent_type === "predefined" && Boolean(agent.self_evolve);
@@ -134,18 +135,30 @@ export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardPro
             {t("card.resummon")}
           </Button>
         )}
+        {onExport && (
+          <Button
+            variant="ghost"
+            size="xs"
+            className={`text-muted-foreground hover:text-primary ${agent.status === "summon_failed" && onResummon ? "" : "ml-auto"}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onExport();
+            }}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        )}
         {onDelete && (
           <Button
             variant="ghost"
             size="xs"
-            className={`text-muted-foreground hover:text-destructive ${agent.status === "summon_failed" && onResummon ? "" : "ml-auto"}`}
+            className={`text-muted-foreground hover:text-destructive ${!onExport && !(agent.status === "summon_failed" && onResummon) ? "ml-auto" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
           >
             <Trash2 className="h-3.5 w-3.5" />
-            {t("card.delete")}
           </Button>
         )}
       </div>
