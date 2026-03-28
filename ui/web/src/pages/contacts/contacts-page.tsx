@@ -127,13 +127,13 @@ export function ContactsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="users" className="mt-3">
+        <TabsContent value="users" className="mt-0 space-y-3">
 
       {/* Permissions note */}
       <PermissionsNote />
 
       {/* Filters */}
-      <div className="mt-3 flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <form onSubmit={handleSearchSubmit} className="flex gap-2 flex-1 min-w-[200px] max-w-md">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -174,10 +174,10 @@ export function ContactsPage() {
         </Select>
       </div>
 
-      {/* Selection toolbar — always rendered to avoid layout shift */}
-      <div className="mt-3 flex items-center gap-2 rounded-md border px-3 py-2 transition-colors"
-        style={{ visibility: selectedIds.size > 0 ? "visible" : "hidden" }}
-      >
+      {/* Selection toolbar */}
+      {selectedIds.size > 0 && (
+      <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+
         <span className="text-sm font-medium">
           {t("selectedCount", { count: selectedIds.size })}
         </span>
@@ -192,9 +192,10 @@ export function ContactsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Table */}
-      <div className="mt-2">
+      <div>
         {showSkeleton ? (
           <TableSkeleton rows={8} />
         ) : contacts.length === 0 ? (
@@ -221,7 +222,7 @@ export function ContactsPage() {
 
         </TabsContent>
 
-        <TabsContent value="groups" className="mt-3">
+        <TabsContent value="groups" className="mt-0">
           <GroupsPanel />
         </TabsContent>
       </Tabs>
@@ -247,7 +248,7 @@ function GroupsPanel() {
   const spinning = useMinLoading(fetching);
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Select value={channelFilter || "all"} onValueChange={(v) => setChannelFilter(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[160px]">
@@ -308,7 +309,7 @@ function PermissionsNote() {
   const p = "permissionsNote";
 
   return (
-    <div className="mt-4 rounded-md border border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
+    <div className="rounded-md border border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
       <button
         type="button"
         onClick={() => setOpen(!open)}
