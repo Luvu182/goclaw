@@ -42,13 +42,15 @@ func (s *PGGroupStore) ListGroups(ctx context.Context, channelType string) ([]st
 	if tenantID == uuid.Nil {
 		tenantID = store.MasterTenantID
 	}
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, channel_type, channel_instance, group_id, group_name, avatar_url, member_count, first_seen_at, last_seen_at
-		FROM channel_groups
-		WHERE tenant_id = $1 AND channel_type = $2
-		ORDER BY COALESCE(group_name, group_id)`,
-		tenantID, channelType,
-	)
+	query := `SELECT id, channel_type, channel_instance, group_id, group_name, avatar_url, member_count, first_seen_at, last_seen_at
+		FROM channel_groups WHERE tenant_id = $1`
+	args := []any{tenantID}
+	if channelType != "" {
+		query += ` AND channel_type = $2`
+		args = append(args, channelType)
+	}
+	query += ` ORDER BY COALESCE(group_name, group_id)`
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +66,21 @@ func (s *PGGroupStore) GetGroupsByIDs(ctx context.Context, channelType string, g
 	if tenantID == uuid.Nil {
 		tenantID = store.MasterTenantID
 	}
-	query, args := buildINQuery(
-		`SELECT id, channel_type, channel_instance, group_id, group_name, avatar_url, member_count, first_seen_at, last_seen_at
-		 FROM channel_groups WHERE tenant_id = $1 AND channel_type = $2 AND group_id IN `,
-		3, groupIDs, tenantID, channelType,
-	)
+	var query string
+	var args []any
+	if channelType != "" {
+		query, args = buildINQuery(
+			`SELECT id, channel_type, channel_instance, group_id, group_name, avatar_url, member_count, first_seen_at, last_seen_at
+			 FROM channel_groups WHERE tenant_id = $1 AND channel_type = $2 AND group_id IN `,
+			3, groupIDs, tenantID, channelType,
+		)
+	} else {
+		query, args = buildINQuery(
+			`SELECT id, channel_type, channel_instance, group_id, group_name, avatar_url, member_count, first_seen_at, last_seen_at
+			 FROM channel_groups WHERE tenant_id = $1 AND group_id IN `,
+			2, groupIDs, tenantID,
+		)
+	}
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err

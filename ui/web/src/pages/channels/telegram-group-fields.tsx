@@ -26,6 +26,7 @@ export function TelegramGroupFields({ config, onChange, idPrefix }: Props) {
       onChange={(key, value) => onChange({ ...config, [key]: value })}
       idPrefix={idPrefix}
       contextValues={config as Record<string, unknown>}
+      channelType="telegram"
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { History, RefreshCw } from "lucide-react";
@@ -9,11 +9,13 @@ import { Pagination } from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/shared/loading-skeleton";
 import { useDeferredLoading } from "@/hooks/use-deferred-loading";
+import { useContactResolver } from "@/hooks/use-contact-resolver";
 import { useSessions } from "./hooks/use-sessions";
 import { SessionDetailPage } from "./session-detail-page";
-import { parseSessionKey } from "@/lib/session-key";
+import { parseSessionKey, parseScopeDetails } from "@/lib/session-key";
 import { formatRelativeTime, formatTokens } from "@/lib/format";
 import type { SessionInfo } from "@/types/session";
+import type { ChannelContact } from "@/types/contact";
 
 export function SessionsPage() {
   const { t } = useTranslation("sessions");
@@ -28,6 +30,18 @@ export function SessionsPage() {
     offset: (page - 1) * pageSize,
   });
   const showSkeleton = useDeferredLoading(loading && sessions.length === 0);
+
+  // Extract sender IDs from session scopes for batch contact resolution
+  const senderIDs = useMemo(() => {
+    const ids: string[] = [];
+    for (const s of sessions) {
+      const { scope } = parseSessionKey(s.key);
+      const details = parseScopeDetails(scope);
+      if (details) ids.push(details.senderID);
+    }
+    return ids;
+  }, [sessions]);
+  const { resolve: resolveContact } = useContactResolver(senderIDs);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -54,12 +68,18 @@ export function SessionsPage() {
   const filtered = sessions.filter((s) => {
     const q = search.toLowerCase();
     const meta = s.metadata;
+    // Also search resolved contact names
+    const { scope } = parseSessionKey(s.key);
+    const details = parseScopeDetails(scope);
+    const contact = details ? resolveContact(details.senderID) : null;
     return (
       s.key.toLowerCase().includes(q) ||
       (s.label ?? "").toLowerCase().includes(q) ||
       (meta?.display_name ?? "").toLowerCase().includes(q) ||
       (meta?.username ?? "").toLowerCase().includes(q) ||
-      (meta?.chat_title ?? "").toLowerCase().includes(q)
+      (meta?.chat_title ?? "").toLowerCase().includes(q) ||
+      (contact?.display_name ?? "").toLowerCase().includes(q) ||
+      (contact?.username ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -102,6 +122,7 @@ export function SessionsPage() {
                   <SessionRow
                     key={session.key}
                     session={session}
+                    resolveContact={resolveContact}
                     onClick={() => navigate(`/sessions/${encodeURIComponent(session.key)}`)}
                   />
                 ))}
@@ -124,13 +145,29 @@ export function SessionsPage() {
 
 function SessionRow({
   session,
+  resolveContact,
   onClick,
 }: {
   session: SessionInfo;
+  resolveContact: (id: string) => ChannelContact | null;
   onClick: () => void;
 }) {
   const { t } = useTranslation("sessions");
   const parsed = parseSessionKey(session.key);
+  const scopeDetails = parseScopeDetails(parsed.scope);
+  const contact = scopeDetails ? resolveContact(scopeDetails.senderID) : null;
+
+  // Resolve sender name: metadata > contact > raw ID
+  const senderName =
+    session.metadata?.chat_title ||
+    session.metadata?.display_name ||
+    contact?.display_name ||
+    scopeDetails?.senderID ||
+    parsed.scope;
+
+  const agentLabel = session.agentName || parsed.agentId;
+  const peerKind = scopeDetails?.peerKind || session.metadata?.peer_kind || "";
+  const peerLabel = peerKind === "direct" ? "DM" : peerKind === "group" ? "Group" : "";
 
   return (
     <tr
@@ -138,18 +175,25 @@ function SessionRow({
       onClick={onClick}
     >
       <td className="px-4 py-3">
-        <div className="text-sm font-medium">
-          {session.metadata?.chat_title || session.metadata?.display_name || session.label || parsed.scope}
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {session.metadata?.username ? `@${session.metadata.username}` : session.key}
-          {session.channel && session.channel !== "ws" && (
-            <Badge variant="secondary" className="text-2xs px-1 py-0">{session.channel}</Badge>
+        <div className="text-sm font-medium flex items-center gap-1.5">
+          {peerLabel && (
+            <Badge variant={peerKind === "direct" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0">
+              {peerLabel}
+            </Badge>
           )}
+          <span>{senderName}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className="text-muted-foreground">{agentLabel}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+          {session.channel && session.channel !== "ws" && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">{session.channel}</Badge>
+          )}
+          <span className="truncate max-w-[300px]" title={session.key}>{parsed.scope}</span>
         </div>
       </td>
       <td className="px-4 py-3">
-        <Badge variant="outline">{session.agentName || parsed.agentId}</Badge>
+        <Badge variant="outline">{agentLabel}</Badge>
       </td>
       <td className="px-4 py-3">
         <ContextUsageBar

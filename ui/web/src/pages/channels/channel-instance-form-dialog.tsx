@@ -244,21 +244,115 @@ export function ChannelInstanceFormDialog({
         </DialogHeader>
 
         {step === "form" && (
-          <ChannelInstanceFormStep
-            form={form}
-            instance={instance}
-            agents={agents}
-            credsValues={credsValues}
-            configValues={configValues}
-            onCredsChange={handleCredsChange}
-            onConfigChange={handleConfigChange}
-            setConfigValues={setConfigValues}
-            error={error}
-            loading={loading}
-            onCancel={() => onOpenChange(false)}
-            onSubmit={handleSubmit}
-            submitLabel={submitLabel}
-          />
+          <>
+            <div className="grid gap-4 py-2 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-y-auto min-h-0">
+              <div className="grid gap-1.5">
+                <Label htmlFor="ci-name">{t("form.key")}</Label>
+                <Input id="ci-name" value={name} onChange={(e) => setName(slugify(e.target.value))} placeholder={t("form.keyPlaceholder")} disabled={!!instance} />
+                <p className="text-xs text-muted-foreground">{t("form.keyHint")}</p>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="ci-display">{t("form.displayName")}</Label>
+                <Input id="ci-display" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t("form.displayNamePlaceholder")} />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label>{t("form.channelType")}</Label>
+                <Select value={channelType} onValueChange={setChannelType} disabled={!!instance}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CHANNEL_TYPES.map((ct) => (
+                      <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label>{t("form.agent")}</Label>
+                <Select value={agentId} onValueChange={setAgentId}>
+                  <SelectTrigger><SelectValue placeholder={t("form.selectAgent")} /></SelectTrigger>
+                  <SelectContent>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.display_name || a.agent_key}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {credsFields.length > 0 && (
+                <fieldset className="rounded-md border p-3 space-y-3">
+                  <legend className="px-1 text-sm font-medium">
+                    {t("form.credentials")}
+                    {instance && <span className="text-xs font-normal text-muted-foreground ml-1">{t("form.credentialsHint")}</span>}
+                  </legend>
+                  <ChannelFields fields={credsFields} values={credsValues} onChange={handleCredsChange} idPrefix="ci-cred" isEdit={!!instance} contextValues={configValues} />
+                  <p className="text-xs text-muted-foreground">{t("form.credentialsEncrypted")}</p>
+                </fieldset>
+              )}
+
+              <ChannelScopesInfo channelType={channelType} />
+
+              {/* Auth status indicator (edit mode, channels with auth wizard step) */}
+              {instance && wizard?.steps.includes("auth") && (
+                <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${instance.has_credentials ? "bg-green-500" : "bg-amber-500"}`} />
+                    <span className="text-sm">
+                      {instance.has_credentials
+                        ? t("form.authStatus.authenticated")
+                        : t("form.authStatus.notAuthenticated")}
+                    </span>
+                    {!instance.has_credentials && (
+                      <span className="text-xs text-muted-foreground ml-1">{t("form.authStatus.useQrHint")}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Wizard info banner (create mode) */}
+              {hasWizard && wizard?.formBanner && (
+                <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 p-3">
+                  <p className="text-sm text-muted-foreground">{t(wizard.formBanner)}</p>
+                </div>
+              )}
+
+              {formCfgFields.length > 0 && (
+                <fieldset className="rounded-md border p-3 space-y-3">
+                  <legend className="px-1 text-sm font-medium">{t("form.configuration")}</legend>
+                  <ChannelFields fields={formCfgFields} values={configValues} onChange={handleConfigChange} idPrefix="ci-cfg" channelType={channelType} />
+                  {instance && EditConfig && <EditConfig instance={instance} configValues={configValues} onConfigChange={handleConfigChange} />}
+                </fieldset>
+              )}
+
+              {/* Telegram group/topic overrides */}
+              {channelType === "telegram" && (
+                <TelegramGroupOverrides
+                  groups={(configValues.groups as Record<string, Record<string, unknown>>) ?? {}}
+                  onChange={(groups) => {
+                    setConfigValues((prev) => ({
+                      ...prev,
+                      groups: Object.keys(groups).length > 0 ? groups : undefined,
+                    }));
+                  }}
+                />
+              )}
+
+              <div className="flex items-center gap-2">
+                <Switch id="ci-enabled" checked={enabled} onCheckedChange={setEnabled} />
+                <Label htmlFor="ci-enabled">{t("form.enabled")}</Label>
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{t("form.cancel")}</Button>
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? t("form.saving") : instance ? t("form.update") : (wizard?.createLabel ? t(wizard.createLabel) : t("form.create"))}
+              </Button>
+            </DialogFooter>
+          <>
         )}
 
         {step === "auth" && createdInstanceId && AuthStep && (

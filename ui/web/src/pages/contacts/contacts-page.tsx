@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Contact, Info, Merge, RefreshCw, Search, Unlink } from "lucide-react";
+import { ChevronDown, Contact, Info, Link2, Merge, RefreshCw, Search, Unlink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-skeleton";
@@ -18,6 +19,7 @@ import { useMinLoading } from "@/hooks/use-min-loading";
 import { useDeferredLoading } from "@/hooks/use-deferred-loading";
 import { useContacts } from "./hooks/use-contacts";
 import { useContactMerge } from "./hooks/use-contact-merge";
+import { useGroups } from "./hooks/use-groups";
 import { MergeContactsDialog } from "./merge-contacts-dialog";
 import { ContactsTable } from "./contacts-table";
 
@@ -115,11 +117,23 @@ export function ContactsPage() {
         }
       />
 
+      <Tabs defaultValue="users" className="mt-4">
+        <TabsList>
+          <TabsTrigger value="users" className="gap-1">
+            <Contact className="h-3.5 w-3.5" /> {t("tabs.users")}
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="gap-1">
+            <Users className="h-3.5 w-3.5" /> {t("tabs.groups")}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="mt-3">
+
       {/* Permissions note */}
       <PermissionsNote />
 
       {/* Filters */}
-      <div className="mt-4 flex flex-wrap items-end gap-2">
+      <div className="mt-3 flex flex-wrap items-end gap-2">
         <form onSubmit={handleSearchSubmit} className="flex gap-2 flex-1 min-w-[200px] max-w-md">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -205,6 +219,13 @@ export function ContactsPage() {
         )}
       </div>
 
+        </TabsContent>
+
+        <TabsContent value="groups" className="mt-3">
+          <GroupsPanel />
+        </TabsContent>
+      </Tabs>
+
       {/* Merge dialog */}
       <MergeContactsDialog
         open={mergeDialogOpen}
@@ -215,6 +236,68 @@ export function ContactsPage() {
           refresh();
         }}
       />
+    </div>
+  );
+}
+
+function GroupsPanel() {
+  const { t } = useTranslation("contacts");
+  const [channelFilter, setChannelFilter] = useState("");
+  const { groups, loading, fetching, refresh } = useGroups(channelFilter || undefined);
+  const spinning = useMinLoading(fetching);
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <Select value={channelFilter || "all"} onValueChange={(v) => setChannelFilter(v === "all" ? "" : v)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filters.allChannels")}</SelectItem>
+            {CHANNEL_TYPES.map((ct) => (
+              <SelectItem key={ct} value={ct}>{ct}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={refresh} disabled={spinning} className="gap-1">
+          <RefreshCw className={"h-3.5 w-3.5" + (spinning ? " animate-spin" : "")} />
+        </Button>
+        <span className="text-sm text-muted-foreground ml-auto">{groups.length} groups</span>
+      </div>
+
+      {loading && groups.length === 0 ? (
+        <TableSkeleton rows={5} />
+      ) : groups.length === 0 ? (
+        <EmptyState icon={Users} title={t("groups.emptyTitle")} description={t("groups.emptyDescription")} />
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="px-3 py-2.5 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">{t("groups.name")}</th>
+                <th className="px-3 py-2.5 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">{t("groups.groupId")}</th>
+                <th className="px-3 py-2.5 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">{t("groups.channel")}</th>
+                <th className="px-3 py-2.5 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">{t("groups.members")}</th>
+                <th className="px-3 py-2.5 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">{t("columns.lastSeen")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((g) => (
+                <tr key={g.id} className="border-b last:border-0 hover:bg-muted/20">
+                  <td className="px-3 py-2.5 font-medium">{g.group_name || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs">{g.group_id}</td>
+                  <td className="px-3 py-2.5">
+                    <Badge variant="outline" className="text-[11px]">{g.channel_type}</Badge>
+                  </td>
+                  <td className="px-3 py-2.5 tabular-nums">{g.member_count || "—"}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground text-xs">{formatDate(g.last_seen_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

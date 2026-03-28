@@ -22,13 +22,14 @@ type ChannelInstancesHandler struct {
 	agentStore      store.AgentStore
 	configPermStore store.ConfigPermissionStore
 	contactStore    store.ContactStore
+	groupStore      store.GroupStore
 	tenantStore     store.TenantStore
 	msgBus          *bus.MessageBus
 }
 
 // NewChannelInstancesHandler creates a handler for channel instance management endpoints.
-func NewChannelInstancesHandler(s store.ChannelInstanceStore, agentStore store.AgentStore, configPermStore store.ConfigPermissionStore, contactStore store.ContactStore, tenantStore store.TenantStore, msgBus *bus.MessageBus) *ChannelInstancesHandler {
-	return &ChannelInstancesHandler{store: s, agentStore: agentStore, configPermStore: configPermStore, contactStore: contactStore, tenantStore: tenantStore, msgBus: msgBus}
+func NewChannelInstancesHandler(s store.ChannelInstanceStore, agentStore store.AgentStore, configPermStore store.ConfigPermissionStore, contactStore store.ContactStore, groupStore store.GroupStore, tenantStore store.TenantStore, msgBus *bus.MessageBus) *ChannelInstancesHandler {
+	return &ChannelInstancesHandler{store: s, agentStore: agentStore, configPermStore: configPermStore, contactStore: contactStore, groupStore: groupStore, tenantStore: tenantStore, msgBus: msgBus}
 }
 
 // RegisterRoutes registers all channel instance routes on the given mux.
@@ -47,6 +48,9 @@ func (h *ChannelInstancesHandler) RegisterRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("POST /v1/contacts/merge", h.adminAuth(h.handleMergeContacts))
 		mux.HandleFunc("POST /v1/contacts/unmerge", h.adminAuth(h.handleUnmergeContacts))
 		mux.HandleFunc("GET /v1/contacts/merged/{tenantUserId}", h.auth(h.handleListMergedContacts))
+	}
+	if h.groupStore != nil {
+		mux.HandleFunc("GET /v1/groups", h.auth(h.handleListGroups))
 	}
 	if h.tenantStore != nil {
 		mux.HandleFunc("GET /v1/tenant-users", h.auth(h.handleListTenantUsers))
@@ -512,6 +516,21 @@ func (h *ChannelInstancesHandler) handleListContacts(w http.ResponseWriter, r *h
 		"limit":    opts.Limit,
 		"offset":   opts.Offset,
 	})
+}
+
+// GET /v1/groups?channel_type=telegram
+func (h *ChannelInstancesHandler) handleListGroups(w http.ResponseWriter, r *http.Request) {
+	channelType := r.URL.Query().Get("channel_type")
+	groups, err := h.groupStore.ListGroups(r.Context(), channelType)
+	if err != nil {
+		slog.Error("groups.list", "error", err)
+		writeError(w, http.StatusInternalServerError, protocol.ErrInternal, "failed to list groups")
+		return
+	}
+	if groups == nil {
+		groups = []store.ChannelGroup{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"groups": groups})
 }
 
 func (h *ChannelInstancesHandler) handleResolveContacts(w http.ResponseWriter, r *http.Request) {
