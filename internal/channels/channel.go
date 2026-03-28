@@ -178,6 +178,7 @@ type BaseChannel struct {
 	agentID          string                  // for DB instances: routes to specific agent (empty = use resolveAgentRoute)
 	tenantID         uuid.UUID               // for DB instances: tenant scope (zero = master tenant fallback)
 	contactCollector *store.ContactCollector // optional: auto-collect contacts from channel messages
+	groupCollector   *store.GroupCollector   // optional: auto-collect group directory from channel messages
 
 	// Shared policy + pairing fields (set via setters after construction).
 	pairingService  store.PairingStore
@@ -373,6 +374,11 @@ func (c *BaseChannel) CheckGroupPolicy(ctx context.Context, senderID, chatID, gr
 		return PolicyAllow
 	}
 }
+// SetGroupCollector sets the group collector for auto-collecting group directory from messages.
+func (c *BaseChannel) SetGroupCollector(gc *store.GroupCollector) { c.groupCollector = gc }
+
+// GroupCollector returns the group collector (may be nil).
+func (c *BaseChannel) GroupCollector() *store.GroupCollector { return c.groupCollector }
 
 // IsRunning returns whether the channel is running.
 func (c *BaseChannel) IsRunning() bool {

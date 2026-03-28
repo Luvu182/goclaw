@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -158,16 +157,12 @@ func fetchGroupIDs(ctx context.Context, sess *Session) (map[string]string, error
 	if err != nil {
 		return nil, fmt.Errorf("zalo_personal: decrypt group IDs: %w", err)
 	}
-	slog.Debug("zalo_personal: fetchGroupIDs raw decrypted", "data", string(plain))
-
 	var result struct {
 		GridVerMap map[string]json.RawMessage `json:"gridVerMap"`
 	}
 	if err := json.Unmarshal(plain, &result); err != nil {
 		return nil, fmt.Errorf("zalo_personal: parse group IDs: %w", err)
 	}
-
-	slog.Debug("zalo_personal: fetchGroupIDs parsed", "group_count", len(result.GridVerMap))
 
 	out := make(map[string]string, len(result.GridVerMap))
 	for id, raw := range result.GridVerMap {
@@ -199,21 +194,12 @@ func fetchGroupDetails(ctx context.Context, sess *Session, gridVerMap map[string
 		"gridVerMap": string(gridVerJSON),
 	}
 
-	slog.Debug("zalo_personal: fetchGroupDetails payload",
-		"group_count", len(gridVerMap),
-		"gridVerMap_json", string(gridVerJSON),
-		"payload_json", fmt.Sprintf("%v", payload),
-		"service_url", baseURL,
-	)
-
 	encData, err := encryptPayload(sess, payload)
 	if err != nil {
 		return nil, fmt.Errorf("zalo_personal: encrypt group details payload: %w", err)
 	}
 
 	reqURL := makeURL(sess, baseURL+"/api/group/getmg-v2", nil, true)
-
-	slog.Debug("zalo_personal: fetchGroupDetails request", "url", reqURL)
 
 	form := buildFormBody(map[string]string{"params": encData})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, form)
@@ -233,11 +219,6 @@ func fetchGroupDetails(ctx context.Context, sess *Session, gridVerMap map[string
 		return nil, fmt.Errorf("zalo_personal: parse group details response: %w", err)
 	}
 
-	slog.Debug("zalo_personal: fetchGroupDetails response",
-		"error_code", envelope.ErrorCode,
-		"has_data", envelope.Data != nil,
-	)
-
 	if envelope.ErrorCode != 0 {
 		return nil, fmt.Errorf("zalo_personal: group details error code %d: %s", envelope.ErrorCode, envelope.ErrorMessage)
 	}
@@ -247,10 +228,6 @@ func fetchGroupDetails(ctx context.Context, sess *Session, gridVerMap map[string
 
 	plain, err := decryptDataField(sess, *envelope.Data)
 	if err != nil {
-		slog.Warn("zalo_personal: fetchGroupDetails decryptDataField failed",
-			"error", err,
-			"group_count", len(gridVerMap),
-		)
 		return nil, fmt.Errorf("zalo_personal: decrypt group details: %w", err)
 	}
 	var result struct {

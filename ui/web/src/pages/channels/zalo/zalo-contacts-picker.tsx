@@ -134,7 +134,7 @@ export function ZaloContactsPicker({ instanceId, hasCredentials, value, onChange
             placeholder={t("zalo.searchContacts")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8"
+            className="h-8 text-base md:text-sm"
           />
           <Tabs defaultValue="friends">
             <TabsList className="w-full">
@@ -186,7 +186,7 @@ export function ZaloContactsPicker({ instanceId, hasCredentials, value, onChange
           value={manualId}
           onChange={(e) => setManualId(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addManual(); } }}
-          className="h-8"
+          className="h-8 text-base md:text-sm"
         />
         <Button type="button" variant="outline" size="sm" onClick={addManual} disabled={!manualId.trim()}>
           {t("zalo.add")}

@@ -352,6 +352,10 @@ func (c *Channel) handleMessage(ctx context.Context, update telego.Update) {
 					cc.EnsureContact(ctx, c.Type(), c.Name(), chatIDStr, "", message.Chat.Title, "", "group", "topic", threadStr, "topic")
 				}
 			}
+			// Collect group directory entry.
+			if gc := c.GroupCollector(); gc != nil && message.Chat.Title != "" {
+				gc.EnsureGroup(ctx, c.Type(), c.Name(), chatIDStr, message.Chat.Title, 0)
+			}
 
 			slog.Debug("telegram group message recorded (no mention)",
 				"chat_id", chatID, "sender", senderLabel,
@@ -612,6 +616,12 @@ func (c *Channel) handleMessage(ctx context.Context, update telego.Update) {
 				threadStr := fmt.Sprintf("%d", messageThreadID)
 				cc.EnsureContact(ctx, c.Type(), c.Name(), chatIDStr, "", message.Chat.Title, "", "group", "topic", threadStr, "topic")
 			}
+		}
+	}
+	// Collect group directory entry.
+	if isGroup && message.Chat.Title != "" {
+		if gc := c.GroupCollector(); gc != nil {
+			gc.EnsureGroup(ctx, c.Type(), c.Name(), chatIDStr, message.Chat.Title, 0)
 		}
 	}
 
