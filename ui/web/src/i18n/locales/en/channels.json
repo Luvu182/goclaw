@@ -451,7 +451,9 @@
     "search": "Search...",
     "noMatch": "No matches",
     "manualPlaceholder": "Enter ID manually",
-    "add": "Add"
+    "add": "Add",
+    "fetchGroups": "Fetch groups",
+    "fetching": "Fetching channels..."
   },
   "zalo": {
     "allowedUsers": "Allowed Users",

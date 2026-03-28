@@ -179,6 +179,7 @@ export function ChannelAdvancedDialog({
                 onChange={handleChange}
                 idPrefix="adv-acc"
                 channelType={instance.channel_type}
+                instanceId={instance.id}
               />
             </>
           )}

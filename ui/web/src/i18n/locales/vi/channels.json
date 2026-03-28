@@ -366,7 +366,9 @@
     "search": "Tìm kiếm...",
     "noMatch": "Không tìm thấy",
     "manualPlaceholder": "Nhập ID thủ công",
-    "add": "Thêm"
+    "add": "Thêm",
+    "fetchGroups": "Lấy danh sách nhóm",
+    "fetching": "Đang lấy danh sách kênh..."
   },
   "zalo": {
     "allowedUsers": "Người dùng được phép",

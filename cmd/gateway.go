@@ -398,6 +398,11 @@ func runGateway() {
 	channelMgr := channels.NewManager(msgBus)
 	deps.channelMgr = channelMgr
 
+	// Wire channel manager into HTTP handler for on-demand group refresh
+	if channelInstancesH != nil {
+		channelInstancesH.SetChannelManager(channelMgr)
+	}
+
 	// Wire channel sender + tenant checker on message tool (now that channelMgr exists)
 	if t, ok := toolsReg.Get("message"); ok {
 		if cs, ok := t.(tools.ChannelSenderAware); ok {
