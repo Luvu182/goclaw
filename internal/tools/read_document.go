@@ -149,7 +149,10 @@ func (t *ReadDocumentTool) Execute(ctx context.Context, args map[string]any) *Re
 
 	chainResult, err := ExecuteWithChain(ctx, chain, t.registry, t.callProvider)
 	if err != nil {
-		return ErrorResult(fmt.Sprintf("Document analysis failed: %v", err))
+		r := ErrorResult(fmt.Sprintf("Document analysis failed: %v", err))
+		r.Provider = chainResult.Provider
+		r.Model = chainResult.Model
+		return r
 	}
 
 	result := NewResult(string(chainResult.Data))

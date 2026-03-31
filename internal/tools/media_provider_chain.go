@@ -158,11 +158,15 @@ func ExecuteWithChain(
 	fn ChainCallFn,
 ) (*ChainResult, error) {
 	if len(chain) == 0 {
-		return nil, fmt.Errorf("no providers configured")
+		return &ChainResult{}, fmt.Errorf("no providers configured")
 	}
 
 	var lastErr error
+	var lastProvider, lastModel string
 	for _, entry := range chain {
+		lastProvider = entry.Provider
+		lastModel = entry.Model
+
 		p, err := registry.Get(ctx, entry.Provider)
 		if err != nil {
 			slog.Warn("media_chain: provider not found, skipping",
@@ -203,7 +207,7 @@ func ExecuteWithChain(
 
 			// Don't retry on context cancellation (parent ctx cancelled)
 			if ctx.Err() != nil {
-				return nil, fmt.Errorf("context cancelled: %w", lastErr)
+				return &ChainResult{Provider: lastProvider, Model: lastModel}, fmt.Errorf("context cancelled: %w", lastErr)
 			}
 
 			if attempt < entry.MaxRetries {
@@ -219,7 +223,9 @@ func ExecuteWithChain(
 			"max_retries", entry.MaxRetries, "error", truncateError(lastErr))
 	}
 
-	return nil, fmt.Errorf("all providers failed: %w", lastErr)
+	// Return a partial ChainResult with the last attempted provider/model
+	// so callers can record it in trace spans even on failure.
+	return &ChainResult{Provider: lastProvider, Model: lastModel}, fmt.Errorf("all providers failed: %w", lastErr)
 }
 
 // maxMediaDownloadBytes is the maximum size for media file downloads (200 MB).

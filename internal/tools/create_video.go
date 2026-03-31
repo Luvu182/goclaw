@@ -169,7 +169,10 @@ func (t *CreateVideoTool) Execute(ctx context.Context, args map[string]any) *Res
 
 	chainResult, err := ExecuteWithChain(ctx, chain, t.registry, t.callProvider)
 	if err != nil {
-		return ErrorResult(fmt.Sprintf("video generation failed: %v", err))
+		r := ErrorResult(fmt.Sprintf("video generation failed: %v", err))
+		r.Provider = chainResult.Provider
+		r.Model = chainResult.Model
+		return r
 	}
 
 	// Save to workspace under date-based folder.

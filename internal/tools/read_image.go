@@ -117,7 +117,10 @@ func (t *ReadImageTool) Execute(ctx context.Context, args map[string]any) *Resul
 
 	chainResult, err := ExecuteWithChain(ctx, chain, t.registry, t.callProvider)
 	if err != nil {
-		return ErrorResult(fmt.Sprintf("Image analysis failed — all vision providers returned errors: %v. The user may need to check their provider API keys or configuration.", err))
+		r := ErrorResult(fmt.Sprintf("Image analysis failed — all vision providers returned errors: %v. The user may need to check their provider API keys or configuration.", err))
+		r.Provider = chainResult.Provider
+		r.Model = chainResult.Model
+		return r
 	}
 
 	result := NewResult(string(chainResult.Data))

@@ -113,7 +113,10 @@ func (t *ReadAudioTool) Execute(ctx context.Context, args map[string]any) *Resul
 
 	chainResult, err := ExecuteWithChain(ctx, chain, t.registry, t.callProvider)
 	if err != nil {
-		return ErrorResult(fmt.Sprintf("Audio analysis failed: %v", err))
+		r := ErrorResult(fmt.Sprintf("Audio analysis failed: %v", err))
+		r.Provider = chainResult.Provider
+		r.Model = chainResult.Model
+		return r
 	}
 
 	result := NewResult(string(chainResult.Data))

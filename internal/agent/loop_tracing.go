@@ -280,12 +280,18 @@ func (l *Loop) emitToolSpanEnd(ctx context.Context, spanID uuid.UUID, start time
 		updates["error"] = truncateStr(result.ForLLM, 200)
 	}
 
+	// Always record provider/model when available (even on error without usage).
+	if result.Provider != "" {
+		updates["provider"] = result.Provider
+	}
+	if result.Model != "" {
+		updates["model"] = result.Model
+	}
+
 	// Record token usage from tools that make internal LLM calls (e.g. read_image).
 	if result.Usage != nil {
 		updates["input_tokens"] = result.Usage.PromptTokens
 		updates["output_tokens"] = result.Usage.CompletionTokens
-		updates["provider"] = result.Provider
-		updates["model"] = result.Model
 		if result.Usage.CacheCreationTokens > 0 || result.Usage.CacheReadTokens > 0 {
 			meta := map[string]int{
 				"cache_creation_tokens": result.Usage.CacheCreationTokens,
@@ -296,9 +302,7 @@ func (l *Loop) emitToolSpanEnd(ctx context.Context, spanID uuid.UUID, start time
 			}
 		}
 		// Calculate cost for tool's internal LLM calls.
-		provider := result.Provider
-		model := result.Model
-		if pricing := tracing.LookupPricing(l.modelPricing, provider, model); pricing != nil {
+		if pricing := tracing.LookupPricing(l.modelPricing, result.Provider, result.Model); pricing != nil {
 			cost := tracing.CalculateCost(pricing, result.Usage)
 			if cost > 0 {
 				updates["total_cost"] = cost

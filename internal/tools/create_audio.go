@@ -144,7 +144,10 @@ func (t *CreateAudioTool) Execute(ctx context.Context, args map[string]any) *Res
 
 		chainResult, err := ExecuteWithChain(ctx, chain, t.registry, t.callProvider)
 		if err != nil {
-			return ErrorResult(fmt.Sprintf("audio generation failed: %v", err))
+			r := ErrorResult(fmt.Sprintf("audio generation failed: %v", err))
+			r.Provider = chainResult.Provider
+			r.Model = chainResult.Model
+			return r
 		}
 		audioBytes = chainResult.Data
 		usage = chainResult.Usage
