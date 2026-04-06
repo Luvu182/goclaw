@@ -24,7 +24,7 @@ import { HeartbeatAdvancedPanel } from "./heartbeat-advanced-panel";
 import { HeartbeatDeliverySection } from "./heartbeat-delivery-section";
 import { heartbeatConfigSchema, type HeartbeatConfigFormData } from "@/schemas/heartbeat.schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+
 
 interface HeartbeatConfigDialogProps {
   open: boolean;
