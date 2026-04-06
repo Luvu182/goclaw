@@ -1,0 +1,16 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+
+issues:
+  exclude-dirs:
+    - vendor
+    - ui
+  max-issues-per-linter: 0
+  max-same-issues: 0

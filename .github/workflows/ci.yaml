@@ -40,6 +40,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.1
       - run: go build ./...
       - run: go build -tags sqliteonly ./...
       - run: go vet ./...
