@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os/exec"
@@ -133,7 +134,7 @@ func (t *ClaudeCodeTool) Execute(ctx context.Context, args map[string]any) *Resu
 
 	err := cmd.Run()
 	if err != nil {
-		if execCtx.Err() == context.DeadlineExceeded {
+		if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
 			return ErrorResult("claude_code timed out after 10 minutes")
 		}
 		errMsg := stderr.String()
