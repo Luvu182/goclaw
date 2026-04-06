@@ -65,6 +65,7 @@
     "channel": "Channel",
     "members": "成员",
     "emptyTitle": "暂无群组",
-    "emptyDescription": "当收到群聊消息时，群组将显示在此处。"
+    "emptyDescription": "当收到群聊消息时，群组将显示在此处。",
+    "count": "{{count}} 个群组"
   }
 }

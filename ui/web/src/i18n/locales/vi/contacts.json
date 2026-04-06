@@ -65,6 +65,7 @@
     "channel": "Channel",
     "members": "Thành viên",
     "emptyTitle": "Chưa có nhóm",
-    "emptyDescription": "Nhóm sẽ xuất hiện khi có tin nhắn từ group chat."
+    "emptyDescription": "Nhóm sẽ xuất hiện khi có tin nhắn từ group chat.",
+    "count": "{{count}} nhóm"
   }
 }

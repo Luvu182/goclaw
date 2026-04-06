@@ -65,6 +65,7 @@
     "channel": "Channel",
     "members": "Members",
     "emptyTitle": "No groups",
-    "emptyDescription": "Groups will appear here as messages arrive from group chats."
+    "emptyDescription": "Groups will appear here as messages arrive from group chats.",
+    "count": "{{count}} groups"
   }
 }
