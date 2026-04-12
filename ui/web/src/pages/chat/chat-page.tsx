@@ -123,7 +123,7 @@ export function ChatPage() {
       setAgentIdFallback(newAgentId);
       navigate(`/chat/${encodeURIComponent(`agent:${newAgentId}:ws:direct:${uniqueId()}`)}`)
     },
-    [navigate, sessionKey],
+    [navigate],
   );
 
   const handleSend = useCallback(
