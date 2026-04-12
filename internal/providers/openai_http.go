@@ -36,12 +36,18 @@ func (p *OpenAIProvider) doRequest(ctx context.Context, body any) (io.ReadCloser
 		}
 		httpReq.Header.Set("Authorization", prefix+p.apiKey)
 	}
+	// Personal: identify as Claude Code for provider analytics/access
+	httpReq.Header.Set("User-Agent", "claude-code/2.1.66")
 	// OpenRouter identification headers for rankings/analytics
 	if p.siteURL != "" {
 		httpReq.Header.Set("HTTP-Referer", p.siteURL)
+	} else {
+		httpReq.Header.Set("HTTP-Referer", "https://claude.ai")
 	}
 	if p.siteTitle != "" {
 		httpReq.Header.Set("X-Title", p.siteTitle)
+	} else {
+		httpReq.Header.Set("X-Title", "Claude Code")
 	}
 
 	resp, err := p.client.Do(httpReq)

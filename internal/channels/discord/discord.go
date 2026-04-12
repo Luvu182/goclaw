@@ -29,6 +29,7 @@ type Channel struct {
 	typingCtrls     sync.Map // channelID string → *typing.Controller
 	agentStore      store.AgentStore            // for agent key lookup (nil = writer commands disabled)
 	configPermStore store.ConfigPermissionStore // for group file writer management (nil = writer commands disabled)
+	guildNames      sync.Map                   // guildID → guild name (cached)
 	// pairingService, pairingDebounce, approvedGroups, groupHistory, historyLimit, requireMention
 	// are inherited from channels.BaseChannel.
 }

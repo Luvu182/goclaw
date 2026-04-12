@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Zap, RefreshCw, Upload, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,6 @@ import { SkillDetailDialog } from "./skill-detail-dialog";
 import { SkillInstallDialog } from "./skill-install-dialog";
 import { SkillEditDialog } from "./skill-edit-dialog";
 
-const SkillUploadDialog = lazy(() =>
-  import("./skill-upload-dialog").then((m) => ({ default: m.SkillUploadDialog }))
-);
 import { MissingDepsPanel } from "./missing-deps-panel";
 import { SkillTableRow } from "./skill-table-row";
 import { useRuntimes } from "./hooks/use-runtimes";

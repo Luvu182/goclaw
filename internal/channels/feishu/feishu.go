@@ -45,6 +45,7 @@ type Channel struct {
 	agentStore      store.AgentStore            // optional — agent key → UUID lookup for writer commands
 	configPermStore store.ConfigPermissionStore // optional — group file writer ACL for /addwriter et al.
 	groupAllowList  []string                    // Feishu-specific: per-group sender allowlist (separate from BaseChannel allowList)
+	groupNames      sync.Map                    // chatID → group name (cached)
 	stopCh          chan struct{}
 	httpServer      *http.Server
 	wsClient        *WSClient
@@ -176,6 +177,25 @@ func (c *Channel) refreshGroupsOnStartup() {
 		}
 	}
 	slog.Info("feishu: cached group names", "count", len(chats))
+}
+
+// resolveGroupName returns the cached group name, fetching from Lark API on first call.
+func (c *Channel) resolveGroupName(ctx context.Context, chatID string) string {
+	if chatID == "" {
+		return ""
+	}
+	if name, ok := c.groupNames.Load(chatID); ok {
+		return name.(string)
+	}
+	info, err := c.client.GetChatInfo(ctx, chatID)
+	if err != nil {
+		slog.Debug("feishu: failed to resolve group name", "chat_id", chatID, "error", err)
+		return ""
+	}
+	if info.Name != "" {
+		c.groupNames.Store(chatID, info.Name)
+	}
+	return info.Name
 }
 
 // BlockReplyEnabled returns the per-channel block_reply override (nil = inherit gateway default).

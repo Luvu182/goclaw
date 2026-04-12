@@ -49,6 +49,7 @@ type Channel struct {
 	userCacheMu sync.RWMutex
 	userCache   map[string]cachedUser
 
+	channelNames  sync.Map        // channelID → channel name (cached)
 	debounceDelay time.Duration
 	threadTTL     time.Duration  // thread participation expiry (0 = disabled)
 	wg            sync.WaitGroup // tracks goroutines for clean shutdown

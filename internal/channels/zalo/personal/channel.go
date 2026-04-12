@@ -22,6 +22,7 @@ type Channel struct {
 	*channels.BaseChannel
 	config      config.ZaloPersonalConfig
 	typingCtrls sync.Map // threadID → *typing.Controller
+	groupNames  sync.Map // threadID → group name (cached)
 
 	mu       sync.RWMutex // protects sess and listener
 	sess     *protocol.Session
@@ -66,6 +67,15 @@ func New(cfg config.ZaloPersonalConfig, msgBus *bus.MessageBus, pairingSvc store
 	ch.SetHistoryLimit(historyLimit)
 	ch.SetRequireMention(requireMention)
 	return ch, nil
+}
+
+// resolveGroupName returns the cached group name for a thread ID.
+// The cache is populated during group message handling when group info is available.
+func (c *Channel) resolveGroupName(threadID string) string {
+	if name, ok := c.groupNames.Load(threadID); ok {
+		return name.(string)
+	}
+	return ""
 }
 
 // BlockReplyEnabled returns the per-channel block_reply override (nil = inherit gateway default).
